@@ -10,7 +10,7 @@ enum op {
     place_disc,
     move_left,
     move_right,
-    exit,
+    stop,
     invalid_input
 };
 
@@ -83,7 +83,7 @@ struct tower {
     }
 
     bool empty() {
-        !disc_count;
+        return (!disc_count);
     }
 
     ~tower() {
@@ -103,8 +103,9 @@ void game_loop();
 
 int main() {
 
+    std::string test = "(       )";
 
-
+    std::cout << test.length() << "\n";
 
     return 0;
 }
@@ -202,23 +203,25 @@ op get_op(std::pair<disc, std::vector<tower>> game_context, int pointer_pos) {
             break;
 
         case 'p':
-            move = op::exit;
+            move = op::stop;
             break;
         
         default:
             move == op::invalid_input;
             break;
     }
+
+    return move;
 }
 
 
 
 void print_towers(std::pair<disc, std::vector<tower>> game_context, int pointer_pos) {
 
-
-
-    // printf("                                                   ");
     
+
+    
+    printf("                                                   ");
     printf("                                                   ");
     printf("        |                |                |        ");
     printf("       ( )              ( )              ( )       ");
@@ -227,4 +230,7 @@ void print_towers(std::pair<disc, std::vector<tower>> game_context, int pointer_
     printf("    (       )        (       )        (       )    ");
     printf("   (         )      (         )      (         )   ");
     printf("========|================|================|========");
+    // ^^ 51 characters long ^^
+
+    // discs are 11 - 3 characters long
 }
