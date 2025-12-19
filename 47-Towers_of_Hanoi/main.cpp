@@ -95,7 +95,7 @@ struct tower {
 
 
 
-void print_towers(std::vector<tower> towers, disc hand);
+void print_towers(std::pair<disc, std::vector<tower>> game_context, int pointer_pos);
 op get_op(std::pair<disc, std::vector<tower>> game_context, int pointer_pos);
 
 void game_loop();
@@ -209,4 +209,22 @@ op get_op(std::pair<disc, std::vector<tower>> game_context, int pointer_pos) {
             move == op::invalid_input;
             break;
     }
+}
+
+
+
+void print_towers(std::pair<disc, std::vector<tower>> game_context, int pointer_pos) {
+
+
+
+    // printf("                                                   ");
+    
+    printf("                                                   ");
+    printf("        |                |                |        ");
+    printf("       ( )              ( )              ( )       ");
+    printf("      (   )            (   )            (   )      ");
+    printf("     (     )          (     )          (     )     ");
+    printf("    (       )        (       )        (       )    ");
+    printf("   (         )      (         )      (         )   ");
+    printf("========|================|================|========");
 }
