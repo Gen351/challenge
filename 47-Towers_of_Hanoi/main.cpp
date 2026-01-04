@@ -198,6 +198,7 @@ void game_loop(int disc_count) {
         printf("Disc Count can only be 5 - 2");
         disc_count = 5;
     }
+    printf("!!! ONLY WORKS ON Windows 10^ !!!\n")
 
     /* GAME LOOP CONTEXT */
     bool running = true;
@@ -246,7 +247,7 @@ void game_loop(int disc_count) {
             // only update the move if you moved the disc on a different tower
             moves += (prev_pointer_pos != pointer_pos);
             /* MOVE INCREMENT LOGIC*/
-            
+
         } else if(make == op::take_disc) {
             if(!towers[pointer_pos].empty()) {
                 on_hand = towers[pointer_pos].peek();
