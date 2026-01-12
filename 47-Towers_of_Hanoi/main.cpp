@@ -198,7 +198,7 @@ void game_loop(int disc_count) {
         printf("Disc Count can only be 5 - 2");
         disc_count = 5;
     }
-    printf("!!! ONLY WORKS ON Windows 10^ !!!\n")
+    printf("!!! ONLY WORKS ON Windows 10^ !!!\n");
 
     /* GAME LOOP CONTEXT */
     bool running = true;
