@@ -7,7 +7,7 @@
 #include "net.h"
 
 int main () {
-    srand(time(0));
+    srand(time(nullptr));
 
     // Test 3
     Layer layer = Layer();
@@ -27,6 +27,11 @@ int main () {
     std::vector<int> layerSizes = {2, 4, 4, 2, 2};
     Net net1 = Net(layerSizes);
     net1.DEBUG("NET TEST{2, 4, 4, 2, 2}");
+
+    //Test 5
+    std::vector<int> layerSizes1 = {2, 4, 8, 9, 10};
+    Net net2 = Net(layerSizes1);
+    net2.DEBUG("NET TEST{2, 4, 8, 9, 10}");
 
     return 0;
 }

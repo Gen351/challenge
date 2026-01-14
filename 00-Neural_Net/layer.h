@@ -14,27 +14,43 @@ class Layer {
     std::vector<float> bias;
     std::vector<float> output;
 
-public:
-    Layer() {
-        weight.resize(1, std::vector<float>(1, initWeight()));
-        input.resize(1, 0);
-        bias.resize(1, 0);
-        output.resize(1, 0);
-    }
+    std::vector<float> gamma;
 
-    Layer(int inputSize, int outputSize) {
-        weight.resize(outputSize, std::vector<float>(inputSize, 0));
+public:
+    Layer() : weight(1, std::vector<float>(1, initWeight())),
+            input(1, 0.0f),
+            bias(1, 0.0f),
+            output(1, 0.0f),
+            gamma(1, 0.0f)
+    {}
+
+    Layer(int inputSize, int outputSize) : 
+            weight(outputSize, std::vector<float>(inputSize, 0.0f)),
+            input(inputSize, 0.0f),
+            bias(outputSize, 0.0f),
+            output(outputSize, 0.0f),
+            gamma(outputSize, 0.0f) 
+    {
         for(int i = 0; i < outputSize; i++) {
             for(int j = 0; j < inputSize; j++) {
                 weight[i][j] = initWeight();
             }
         }
-        input.resize(inputSize, 0);
-        bias.resize(outputSize, 0);
-        output.resize(outputSize, 0);
     }
 
-    std::vector<float> computeOutput(std::vector<float>& newInput) {
+    Layer(const Layer& other)
+        : weight(other.weight),
+        input(other.input),
+        bias(other.bias),
+        output(other.output),
+        gamma(other.gamma)
+    {}
+
+    // not needed, the compiler is going to do it for me...?
+    Layer& operator=(const Layer&) = default;
+    Layer(Layer&&) = default;
+
+    std::vector<float> calculateOutput(const std::vector<float>& newInput) {
         if(newInput.size() != input.size()) {
             throw std::runtime_error("== Input Sizes DO NOT MATCH ===");
         }
@@ -42,7 +58,7 @@ public:
         for(int i = 0; i < output.size(); i++) {
             float sum = bias[i];
             for(int j = 0; j < newInput.size(); j++) {
-                sum += (newInput[j] * weight[i][j]);
+                sum += newInput[j] * weight[i][j];
             }
             // need activation? idk where to put activation
             // (1). put sigmoid here?
@@ -53,11 +69,83 @@ public:
         return output;
     }
 
-    int getOutputSize() {
-        return output.size();
+    void calculateOutputGradient(const std::vector<float>& targetValues) {
+        if(targetValues.size() != output.size()) {
+            throw std::runtime_error("targetValues.size() do not match output.size()");
+        }
+        if(gamma.size() != output.size()) {
+            throw std::runtime_error("gamma.size() do not match output.size()");
+        }
+
+        for(int i = 0; i < targetValues.size(); i++) {
+            float difference = targetValues[i] - output[i];
+            gamma[i] = difference * sigmoidDerivative(output[i]);
+        }
     }
-    int getInputSize() {
-        return input.size();
+
+    void calculateHiddenGradient(const Layer& nextLayer) {
+        for(int i = 0; i < gamma.size(); i++) {
+            float sum = 0.0f;
+            for(int j = 0; j < nextLayer.gamma.size(); j++) {
+                sum += nextLayer.gamma[j] * nextLayer.weight[j][i];
+            }
+            gamma[i] = sum * sigmoidDerivative(output[i]); 
+        }
+    }
+
+    void updateWeights(const float& learningRate) {
+        for(int i = 0; i < weight.size(); i++) {
+            for(int j = 0; j < weight[i].size(); j++) {
+                weight[i][j] = weight[i][j] + (learningRate * gamma[i] * input[j]);
+            }
+            bias[i] = bias[i] + (learningRate * gamma[i]);
+        }
+    }
+
+    void getError(const std::vector<float>& targetValues, std::vector<float>& error) {
+        if(targetValues.size() != output.size()) {
+            throw std::runtime_error("targetValues.size() do not match output.size()");
+        } else if(gamma.size() != output.size()) {
+            throw std::runtime_error("gamma.size() do not match output.size()");
+        } else if(error.size() != output.size()) {
+            throw std::runtime_error("gamma.size() do not match output.size()");
+        }
+
+        for(int i = 0; i < targetValues.size(); i++) {
+            float difference = targetValues[i] - output[i];
+            error[i] = difference * difference;
+        }
+    }
+    float calculateOutputGradientWithError(const std::vector<float>& targetValues) {
+        if(targetValues.size() != output.size()) {
+            throw std::runtime_error("targetValues.size() do not match output.size()");
+        }
+        if(gamma.size() != output.size()) {
+            throw std::runtime_error("gamma.size() do not match output.size()");
+        }
+
+        // get the error score
+        std::vector<float> error(output.size(), 0.0f);
+        getError(targetValues, error);
+        float sumError = 0.0f;
+        for(const auto& err : error) {
+            sumError += err;
+        }
+        
+        for(int i = 0; i < targetValues.size(); i++) {
+            float difference = targetValues[i] - output[i];
+            gamma[i] = difference * sigmoidDerivative(output[i]);
+        }
+
+        return sumError / (float)output.size();
+    }
+
+    /* !! SCARY !!, const, but scary */
+    const std::vector<float>& getLastOutput() const {
+        return output;
+    }
+    const std::vector<float>& getLastIntput() const {
+        return input;
     }
 
 private:
@@ -66,15 +154,44 @@ private:
         return (1.0f / (1.0f + std::exp(-x)));
     }
 
+    float sigmoidDerivative(float val) {
+        return (val * (1.0f - val));
+    }
+
     float initWeight() {
         return ((float)rand()/(float)RAND_MAX)
                 - ((float)rand()/(float)RAND_MAX);
     }
 
 
-
-
 public:
+    void clearInput() {
+        for(float& inputs : input) {
+            inputs = 0.0f;
+        }
+    }
+    void clearBias() {
+        for(float& biases : bias) {
+            biases = 0.0f;
+        }
+    }
+
+    // for testing...
+    void initRandomInput(int min = 1, int max = 255) {
+        if(min >= max) {
+            return;
+        }
+
+        for(float& inputs : input) {
+            inputs =  (min + (rand() % max));
+        }
+    }
+    void initRandomBias() {
+        for(float& biases : bias) {
+            biases =  initWeight();
+        }
+    }
+
     void DEBUG(const std::string& LABEL = "LAYER TEST") {
         std::cout << "\n" << "__ " << LABEL << " ________________________" << "\n";
         std::cout << " weight[" << weight.size() << "]" 
