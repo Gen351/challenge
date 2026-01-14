@@ -7,8 +7,8 @@
 
 
 int main(int argc, char* argv[]) {
-    
-    std::cerr << argc << "\n";
+
+    std::cout << argc << '\n';
 
     return argc;
 }
