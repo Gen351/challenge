@@ -145,8 +145,11 @@ public:
         std::cout << "Output TEST: \n";
         layers[0].initRandomInput(1, 255);
         layers[0].initRandomBias();
-        for(const auto& outputs : feedForward(layers[0].getLastInput())) {
-            std::cout << "~O- " << outputs << "\n";
+
+        std::vector<float> debug = feedForward(layers[0].getLastInput());
+        for(int i = 0; i < debug.size(); i++) {
+            printf("~( %2d )- %9f\n", i+1, debug[i]);
+            // std::cout << "~[ " << i+1 << " ]- " << debug[i] << "\n";
         }
 
         std::cout << "\n\n";

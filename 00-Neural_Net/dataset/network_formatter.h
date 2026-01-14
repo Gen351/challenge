@@ -125,7 +125,7 @@ namespace NetworkFormatter {
         return line.str();
     }
 
-    std::string formatVectorDelimited(const std::vector<float>& values, char delim = ' ') {
+    std::string formatVectorDelimited(const std::vector<float>& values, char delim) {
         std::ostringstream line;
         line << std::setprecision(9);
         
