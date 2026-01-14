@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-namespace NetworkSaver {
+namespace NetworkFormatter {
     std::string formatVectorDelimited(const std::vector<float>& values, char delim = ' ');
     std::string formatWeightSemicolonDelimited(const std::vector<std::vector<float>>& weight);
     inline std::vector<std::string> formatNetwork(const Net& net);
