@@ -140,6 +140,13 @@ public:
         return sumError / (float)output.size();
     }
 
+    void setBias(std::vector<float>& newBias) {
+        bias = newBias;
+    }
+    void setWeight(std::vector<std::vector<float>>& newWeight) {
+        weight = newWeight;
+    }
+
     /* !! SCARY !!, const, but scary */
     const std::vector<float>& getLastOutput() const {
         return output;
@@ -156,6 +163,7 @@ public:
     const std::vector<std::vector<float>>& getWeight() const {
         return weight;
     }
+
 
 private:
 

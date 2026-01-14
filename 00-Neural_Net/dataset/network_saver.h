@@ -17,7 +17,7 @@ namespace NetworkSaver {
         std::string filename;
 
         while (true) {
-            filename = networkName + std::to_string(iter) + ".cnn";
+            filename = networkName + std::to_string(iter) + ".nn";
 
             std::ifstream test(filename);
             if (!test.good()) {

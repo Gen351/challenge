@@ -18,6 +18,10 @@ public:
         layers.resize(2);
     }
 
+    // not needed, the compiler is going to do it for me...?
+    Net& operator=(const Net&) = default;
+    Net(Net&&) = default;
+
     Net(std::vector<int> layerSizes) {
         if(layerSizes.size() < 2) {
             throw std::runtime_error("Network must have at least 2 layers (Input -> Output).");
@@ -86,6 +90,10 @@ public:
 
     // still const, this is for saving the network
     const std::vector<Layer>& getLayers() const {
+        return layers;
+    }
+
+    std::vector<Layer>& getLayersRef() {
         return layers;
     }
 

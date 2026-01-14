@@ -11,38 +11,14 @@
 const std::string& MNIST_TRAIN_DATA_PATH = "./dataset/MNIST/mnist_train.csv";
 const std::string& MNIST_NETWORK_SAVE_PATH = "./dataset/MNIST/NNs/mnist";
 
-int main(int argc, char* argv[]) {
-    
+void setDatas(const std::vector<std::string> dataset, 
+                std::vector<std::vector<float>>& trainingData,
+                std::vector<std::vector<float>>& targetValues)
+{
     const int PIXEL_MAX_VAL = 255;
     // MNIST pixl count (28 x 28)
     const int firstLayerInputSize = 784;
-    
-    /* ============================== */
-    /* C O N T R O L S      S T A R T */
-    /* ============================== */
-    const int epochs = 5;
-    const float learningRate = 0.03f;
-    std::vector<int> layerSizes = {firstLayerInputSize, 64, 10};
-    const bool SAVE = true;
-    /* ============================== */
-    /* C O N T R O L S          E N D */
-    /* ============================== */
-    
 
-    Net nn(layerSizes);
-
-
-
-    // nn.DEBUG();
-    // to show the current path
-    // std::cout << argv[0] << '\n';
-    
-    std::vector<std::string> dataset = DatasetLoader::load(MNIST_TRAIN_DATA_PATH);
-    
-    std::vector<std::vector<float>> trainingData;
-    std::vector<std::vector<float>> targetValues;
-    
-    // ignore dataset[0] <-- (label)
     for (int i = 1; i < dataset.size(); i++) {
         std::vector<float> target(10, 0.0f);
         
@@ -77,7 +53,33 @@ int main(int argc, char* argv[]) {
             std::cout << i << ',';
         }
     }
+}
+
+int main(int argc, char* argv[]) {
     
+    const int PIXEL_MAX_VAL = 255;
+    // MNIST pixl count (28 x 28)
+    const int firstLayerInputSize = 784;
+    
+    /* ============================== */
+    /* C O N T R O L S      S T A R T */
+    /* ============================== */
+    const int epochs = 40;
+    const float learningRate = 0.04f;
+    std::vector<int> layerSizes = {firstLayerInputSize, 256, 64, 10};
+    const bool SAVE = true;
+    /* ============================== */
+    /* C O N T R O L S          E N D */
+    /* ============================== */
+    
+
+    Net nn(layerSizes);
+
+
+    std::vector<std::string> dataset = DatasetLoader::load(MNIST_TRAIN_DATA_PATH);    
+    std::vector<std::vector<float>> trainingData;
+    std::vector<std::vector<float>> targetValues;
+    setDatas(dataset, trainingData, targetValues);
     
     /* ============================== */
     /* T R A I N            S T A R T */
