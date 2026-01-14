@@ -2,8 +2,6 @@
 #include <sstream>   // <-- for ostringstream
 #include <iomanip>   // <-- for setprecision
 
-#include "../net.h"
-
 #include <vector>
 #include <string>
 
@@ -12,7 +10,7 @@
 
 namespace NetworkSaver {
 
-    void saveNetwork(const std::vector<std::string>& formattedNetwork, const std::string& networkName) {
+    inline void saveNetwork(const std::vector<std::string>& formattedNetwork, const std::string& networkName) {
         int iter = 0;
         std::string filename;
 
