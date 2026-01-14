@@ -84,6 +84,10 @@ public:
         return feedForward(input);
     }
 
+    // still const, this is for saving the network
+    const std::vector<Layer>& getLayers() const {
+        return layers;
+    }
 
 private:
     // doesn't need to be fast for now... so copying is okay
