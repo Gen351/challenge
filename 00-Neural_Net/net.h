@@ -76,7 +76,7 @@ public:
     }
 
     std::vector<float> predict(const std::vector<float>& input) {
-        if(input.size() != layers[0].getLastIntput().size()) {
+        if(input.size() != layers[0].getLastInput().size()) {
             std::cerr << "INPUT SIZE doesn't match first layer's INPUT SIZE";
             return input;
         }
@@ -145,7 +145,7 @@ public:
         std::cout << "Output TEST: \n";
         layers[0].initRandomInput(1, 255);
         layers[0].initRandomBias();
-        for(const auto& outputs : feedForward(layers[0].getLastIntput())) {
+        for(const auto& outputs : feedForward(layers[0].getLastInput())) {
             std::cout << "~O- " << outputs << "\n";
         }
 

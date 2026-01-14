@@ -144,8 +144,17 @@ public:
     const std::vector<float>& getLastOutput() const {
         return output;
     }
-    const std::vector<float>& getLastIntput() const {
+    const std::vector<float>& getLastInput() const {
         return input;
+    }
+    const std::vector<float>& getGamma() const {
+        return gamma;
+    }
+    const std::vector<float>& getBias() const {
+        return bias;
+    }
+    const std::vector<std::vector<float>>& getWeight() const {
+        return weight;
     }
 
 private:
