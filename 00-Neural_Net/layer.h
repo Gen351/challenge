@@ -50,7 +50,7 @@ public:
     Layer& operator=(const Layer&) = default;
     Layer(Layer&&) = default;
 
-    std::vector<float> calculateOutput(const std::vector<float>& newInput) {
+    const std::vector<float>& calculateOutput(const std::vector<float>& newInput) {
         if(newInput.size() != input.size()) {
             throw std::runtime_error("== Input Sizes DO NOT MATCH ===");
         }

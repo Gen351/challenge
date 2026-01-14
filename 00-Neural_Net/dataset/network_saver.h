@@ -1,4 +1,6 @@
 #pragma once
+#include<iostream>
+
 #include <sstream>   // <-- for ostringstream
 #include <iomanip>   // <-- for setprecision
 
@@ -33,6 +35,8 @@ namespace NetworkSaver {
             if (i + 1 != formattedNetwork.size())
                 write << '\n';
         }
+
+        std::cout << "\nNN saved: " << filename << '\n';
     }
 
 };

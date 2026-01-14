@@ -71,7 +71,7 @@ public:
             }
 
             float error = sumError / (float)trainData.size();
-            std::cerr << "Epoch: " << epoch + 1 << "\tScore: " << error << "\n";
+            std::cout << "Epoch: " << epoch + 1 << "\tScore: " << error << "\n";
         }
     }
 
@@ -92,14 +92,20 @@ public:
 private:
     // doesn't need to be fast for now... so copying is okay
     std::vector<float> feedForward(const std::vector<float>& initialInput) {
-        std::vector<float> currentOutput = initialInput;
-        
-        // feedForward...
-        for(int i = 0; i < layers.size(); i++) {
-            currentOutput = layers[i].calculateOutput(currentOutput);
+        // Handle First Layer explicitly (uses external input)
+        layers[0].calculateOutput(initialInput);
+
+        // Handle Hidden Layers (uses previous layer's output)
+        for(int i = 1; i < layers.size(); i++) {
+            // grab a reference to the previous output
+            const std::vector<float>& prevOutput = layers[i-1].getLastOutput();
+            
+            // feed it in. No new vectors created.
+            layers[i].calculateOutput(prevOutput);
         }
 
-        return currentOutput;
+        // return the final result (Copy needed here to give to the user)
+        return layers.back().getLastOutput();
     }
 
     void backProp(const std::vector<float>& targetValues, const float& learningRate) {
