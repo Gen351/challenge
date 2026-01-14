@@ -113,11 +113,11 @@ int main(int argc, char* argv[]) {
     /* ============================== */
     
 
-    const int TEST = 4;
+    const int TEST = 123;
     const auto nntest = nn.predict(trainingData[TEST]);
 
     for(int i = 0; i < 10; i++) {
-        std::cout << nntest[i] << "\t\t" << targetValues[TEST][i] << '\n';
+        printf("%.10f\t\t%1f\n", nntest[i], targetValues[TEST][i]);
     }
 
     return argc;
