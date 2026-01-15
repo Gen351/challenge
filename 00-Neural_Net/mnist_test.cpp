@@ -5,8 +5,15 @@
 #include "net.h"
 #include "./dataset/network_loader.h"
 
+#include<random>
+#include<time.h>
+
+#include <cmath>
+
+// const std::string& MNIST_TRAINED_NEURAL_NETWORK = "./dataset/FASHION_MNIST/NNs/fashion_mnist0.nn";
+// const std::string& MNIST_TEST_DATA_PATH = "./dataset/FASHION_MNIST/fashion-mnist_test.csv";
 const std::string& MNIST_TRAINED_NEURAL_NETWORK = "./dataset/MNIST/NNs/mnist3.nn";
-const std::string& MNIST_TEST_DATA_PATH = "./dataset/MNIST/mnist_train.csv";
+const std::string& MNIST_TEST_DATA_PATH = "./dataset/MNIST/mnist_test.csv";
 
 void setDatas(const std::vector<std::string> dataset, 
                 std::vector<std::vector<float>>& testingData,
@@ -52,8 +59,31 @@ void setDatas(const std::vector<std::string> dataset,
     }
 }
 
+void printDigit(const std::vector<float>& pixels) {
+    std::cout << "\n--- IMAGE PREVIEW ---\n";
+    for (int y = 0; y < 28; y++) {
+        for (int x = 0; x < 28; x++) {
+            // Get pixel value (0.0 to 1.0)
+            float val = pixels[y * 28 + x];
+            
+            // Convert to 0-255 integer
+            int intensity = static_cast<int>(val * 255.0f);
+            
+            // ANSI Escape Code for Background Color: \x1b[48;2;R;G;Bm
+            // We use the same value for R, G, and B to get grayscale.
+            // We print two spaces "  " because terminal characters are usually tall rectangles.
+            std::cout << "\x1b[48;2;" << intensity << ";" << intensity << ";" << intensity << "m  ";
+        }
+        // Reset color at end of row
+        std::cout << "\x1b[0m\n"; 
+    }
+    std::cout << "\x1b[0m---------------------\n";
+}
+
+
 int main(int argc, char* argv[]) {
-    
+    srand(time(0));
+
     Net nn = NetworkLoader::load(MNIST_TRAINED_NEURAL_NETWORK);
 
 
@@ -62,22 +92,32 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<float>> targetValues;
     setDatas(dataset, testingData, targetValues);
     
-    int correctCounter = 0;
-    for(int i = 0; i < testingData.size(); i++) {
-        const auto prediction = nn.predict(testingData[i]);
+    // int correctCounter = 0;
+    // for(int i = 0; i < testingData.size(); i++) {
+    //     const auto prediction = nn.predict(testingData[i]);
 
-        int predictHigh = 0;
-        int targetHigh = 0;
-        for(int j = 1; j < 10; j++) {
-            if(prediction[j] > prediction[predictHigh]) predictHigh = j;
-            if(targetValues[i][j] > targetValues[i][targetHigh]) targetHigh = j;
-        }
+    //     int predictHigh = 0;
+    //     int targetHigh = 0;
+    //     for(int j = 1; j < 10; j++) {
+    //         if(prediction[j] > prediction[predictHigh]) predictHigh = j;
+    //         if(targetValues[i][j] > targetValues[i][targetHigh]) targetHigh = j;
+    //     }
 
-        correctCounter += (targetHigh == predictHigh);
+    //     correctCounter += (targetHigh == predictHigh);
+    // }
+
+    // float accuracy = (float)correctCounter / testingData.size();
+    // printf("Accuracy: %.8f", accuracy * 100);
+
+    int randomIndex = rand() % testingData.size() - 1;
+
+    printDigit(testingData[randomIndex]);
+    const auto pred = nn.predict(testingData[randomIndex]);
+    int max = 0;
+    for(int i = 1; i < pred.size(); i++) {
+        if(pred[i] > pred[max]) max = i;
     }
-
-    float accuracy = (float)correctCounter / testingData.size();
-    printf("Accuracy: %.8f", accuracy * 100);
+    std::cout << "Prediction: " << max << '\n';
 
     return argc;
 }
