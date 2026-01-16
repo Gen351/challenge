@@ -64,8 +64,8 @@ int main(int argc, char* argv[]) {
     /* ============================== */
     /* C O N T R O L S      S T A R T */
     /* ============================== */
-    const int epochs = 40;
-    const float learningRate = 0.04f;
+    const int epochs = 2;
+    const float learningRate = 0.03f;
     std::vector<int> layerSizes = {firstLayerInputSize, 256, 64, 10};
     const bool SAVE = true;
     /* ============================== */

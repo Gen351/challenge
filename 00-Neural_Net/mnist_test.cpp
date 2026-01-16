@@ -8,11 +8,13 @@
 #include<random>
 #include<time.h>
 
+#include<windows.h>
+
 #include <cmath>
 
 // const std::string& MNIST_TRAINED_NEURAL_NETWORK = "./dataset/FASHION_MNIST/NNs/fashion_mnist0.nn";
 // const std::string& MNIST_TEST_DATA_PATH = "./dataset/FASHION_MNIST/fashion-mnist_test.csv";
-const std::string& MNIST_TRAINED_NEURAL_NETWORK = "./dataset/MNIST/NNs/mnist3.nn";
+const std::string& MNIST_TRAINED_NEURAL_NETWORK = "./dataset/MNIST/NNs/mnist4.nn";
 const std::string& MNIST_TEST_DATA_PATH = "./dataset/MNIST/mnist_test.csv";
 
 void setDatas(const std::vector<std::string> dataset, 
@@ -67,15 +69,16 @@ void printDigit(const std::vector<float>& pixels) {
             float val = pixels[y * 28 + x];
             
             // Convert to 0-255 integer
-            int intensity = static_cast<int>(val * 255.0f);
+            int intensity = (int)(val * 255.0f);
             
             // ANSI Escape Code for Background Color: \x1b[48;2;R;G;Bm
             // We use the same value for R, G, and B to get grayscale.
             // We print two spaces "  " because terminal characters are usually tall rectangles.
-            std::cout << "\x1b[48;2;" << intensity << ";" << intensity << ";" << intensity << "m  ";
+            printf("\x1b[48;2;%d;%d;%dm ", intensity, intensity ,intensity);
+            // std::cout << "\x1b[48;2;" << intensity << ";" << intensity << ";" << intensity << "m  ";
         }
         // Reset color at end of row
-        std::cout << "\x1b[0m\n"; 
+        std::cout << "\x1b[0m\n";
     }
     std::cout << "\x1b[0m---------------------\n";
 }
@@ -109,15 +112,21 @@ int main(int argc, char* argv[]) {
     // float accuracy = (float)correctCounter / testingData.size();
     // printf("Accuracy: %.8f", accuracy * 100);
 
-    int randomIndex = rand() % testingData.size() - 1;
-
-    printDigit(testingData[randomIndex]);
-    const auto pred = nn.predict(testingData[randomIndex]);
-    int max = 0;
-    for(int i = 1; i < pred.size(); i++) {
-        if(pred[i] > pred[max]) max = i;
+    while(true) {
+        system("cls");
+        int randomIndex = rand() % testingData.size() - 1;
+    
+        printDigit(testingData[randomIndex]);
+        const auto pred = nn.predict(testingData[randomIndex]);
+        int max = 0;
+        printf("0: %.9f\n", pred[max]);
+        for(int i = 1; i < pred.size(); i++) {
+            if(pred[i] > pred[max]) max = i;
+            printf("%d: %.9f\n",i, pred[i] * 100);
+        }
+        printf("Prediction: %d | Confidence: %0.3f% \n", max, pred[max] * 100);
+        std::cin.get();
     }
-    std::cout << "Prediction: " << max << '\n';
 
     return argc;
 }
