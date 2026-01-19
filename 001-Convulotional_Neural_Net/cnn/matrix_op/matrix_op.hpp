@@ -1,66 +1,12 @@
-#pragma once
-
 #include<stdexcept>
+#include<time.h>
 
 #include<vector>
 
+#include "matrix.hpp"
+#include "vector.hpp"
+
 namespace MatrixOp {
-    template<typename T>
-    struct Vector {
-        std::vector<T> data;
-
-        Vector() 
-            : data(0) {}
-
-        Vector(size_t size) 
-            : data(size) {}
-        
-
-        T& operator[](size_t index) {
-            return data[index];
-        }
-        const T& operator[](size_t index) const {
-            return data[index];
-        }
-
-        size_t size() const { return data.size(); }
-    };
-    
-    template<typename T>
-    struct Matrix {
-        size_t row;
-        size_t col;
-
-        std::vector<T> data;
-
-        Matrix() 
-            : row(0), col(0), data() {}
-
-        Matrix(size_t r, size_t c, T init = T{}) 
-            : row(r), col(c), data(r * c, init) {}
-
-        
-        T* operator[](size_t r) {
-            if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
-            return &data[r * col];
-        }
-        const T* operator[](size_t r) const {
-            if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
-            return &data[r * col];
-        }
-
-        T& operator()(size_t r, size_t c) {
-            if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
-            return data[r * col + c];
-        }
-        const T& operator()(size_t r, size_t c) const {
-            if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
-            return data[r * col + c];
-        }
-
-        size_t rows() const { return row; }
-        size_t cols() const { return col; }
-    };
 
     /* Functions using the structs */
     /// @brief x Matrix
@@ -152,22 +98,112 @@ namespace MatrixOp {
     }
 
 
+    template<typename T>
+    Matrix<T> add(const Matrix<T>& A, const Matrix<T> B) {
+        if(A.rows() != B.rows() || A.cols() != B.cols()) {
+            throw std::runtime_error("A + B: Dimensions Mismatch!");
+        }
+        Matrix<T> res(A.cols(), A.rows());
+
+        for(size_t i = 0; i < A.data.size(); i++) {
+            res.data[i] = A.data[i] + B.data[i]; 
+        }
+
+        return res;
+    }
+
     /// @example 
     /*
         A = 
             | 1 2 3 |
             | 4 5 6 |
             | 7 8 9 |
-
         transpose(A) =
             | 1 4 7 |
             | 2 5 8 |
             | 3 6 9 |
+
+        B = 
+            | 1 2 3 4 5 |
+            | 6 7 8 9 1 |
+            | 2 3 4 5 6 |
+        transpose(B) = 
+            | 1 6 2 |
+            | 2 7 3 |
+            | 3 8 4 |
+            | 4 9 5 |
+            | 5 1 6 |
     */
     /// @param A - Matrix (n x m) 
     /// @return A^T - Matrix (m x n)
     template<typename T>
     Matrix<T> transpose(const Matrix<T>& A) {
-        
+        Matrix<T> transposed(A.cols(), A.rows());
+
+        for(size_t i = 0; i < A.cols(); i++) {
+            for(size_t j = 0; j < A.rows(); j++) {
+                transposed[i][j] = A[j][i];
+            }
+        }
+
+        return transposed;
+    }
+
+    
+
+    /*============================================
+    ==============================================
+    >> C  N  N    O  P  E  R  A  T  I  O  N  S  <<
+    ==============================================
+    ============================================*/
+    
+    /*
+    /// @brief 
+    /// @param image 
+    /// @param kernel 
+    /// @return 
+    template<typename T>
+    Matrix<T> convolve(const Matrix<T>& image, const Matrix<T>& kernel) {
+        if(image.rows() < kernel.rows() || image.cols() < kernel.cols()) {
+            throw std::runtime_error("Covolve: Image should be: Image >= (3 x 3)");
+        }
+
+        Matrix<T> convolved((image.rows() - kernel.rows()) + 1, (image.cols() - kernel.cols()) + 1);
+
+        for(size_t i = 0; i < convolved.rows(); i++) {
+            for(size_t j = 0; j < convolved.cols(); j++) {
+                // create patch
+                T patchSum = 0;
+                for(size_t x = 0; x < kernel.rows(); x++) {
+                    for(size_t y = 0; y < kernel.cols(); y++) {
+                        patchSum += image[i+x][j+y] * kernel[x][y];
+                    }
+                }
+
+                convolved[i][j] = patchSum;
+            }
+        }
+
+        return convolved;
+    }
+    
+    /// @brief Converts a Matrix into a "flat" Vector or a 1-D array
+    /// @brief ... using std::vector's assignment operator. 
+    /// @param A - Matrix (n x m)
+    /// @return V - Vector (n * m)
+    template<typename T>
+    Vector<T> flatten(const Matrix<T>& A) {
+        Vector<T> V;
+        V.data = A.data;
+        return V;
+    }
+    */
+
+    float initRandFloat() {    
+        return ((float)rand()/(float)RAND_MAX)
+                - ((float)rand()/(float)RAND_MAX);
+    }
+    int initRandInt(int max=RAND_MAX) {
+        return rand()/max;
     }
 }
