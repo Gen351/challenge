@@ -44,7 +44,12 @@ public:
         return output;
     }
 
+    Tensor backward(const Tensor& output) override {
+        return output;
+    }
 
+
+private:
     Matrix<float> convolve(const Matrix<float>& featureMap, const Kernel& kernel) {
         if(featureMap.rows() < kernel.data.rows() || featureMap.cols() < kernel.data.cols()) {
             throw std::runtime_error("Covolve: featureMap should be: featureMap >= (3 x 3)");
@@ -67,18 +72,6 @@ public:
         }
 
         return convolved;
-    }
-
-
-
-    /// @brief Converts a Matrix into a "flat" Vector or a 1-D array
-    /// @brief ... using std::vector's assignment operator. 
-    /// @param A - Matrix (n x m)
-    /// @return V - Vector (n * m)
-    Vector<float> flatten(const Matrix<float>& A) {
-        Vector<float> V;
-        V.data = A.data;
-        return V;
     }
 
 };

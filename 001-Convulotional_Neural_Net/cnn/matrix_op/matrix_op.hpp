@@ -157,6 +157,18 @@ namespace MatrixOp {
     ==============================================
     ============================================*/
     
+    /// @brief Converts a Matrix into a "flat" Vector or a 1-D array
+    /// @brief ... using std::vector's assignment operator. 
+    /// @param A - Matrix (n x m)
+    /// @return V - Vector (n * m)
+    Vector<float> flatten(const Matrix<float>& A) {
+        Vector<float> V;
+        V.data = A.data;
+        return V;
+    }
+
+
+
     /*
     /// @brief 
     /// @param image 
