@@ -16,6 +16,7 @@ public:
 
     virtual Tensor forward(const Tensor& input) = 0;
     virtual Tensor backward(const Tensor& input) = 0;
+    virtual void update(float learningRate) = 0;
 
     void train() {
         training = true;

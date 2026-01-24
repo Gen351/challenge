@@ -11,8 +11,13 @@ struct Matrix {
     std::vector<T> data;
 
     Matrix() = default;
+    
+    Matrix(const Matrix& other) = default;
+    Matrix& operator=(const Matrix& other) = default;
+
     Matrix(Matrix&& other) noexcept = default;
     Matrix& operator=(Matrix&& other) noexcept = default;
+
 
     Matrix(size_t r, size_t c, T init = T{}) 
         : row(r), col(c), data(r * c, init)

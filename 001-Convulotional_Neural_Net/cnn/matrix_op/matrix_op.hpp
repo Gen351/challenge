@@ -173,7 +173,49 @@ namespace MatrixOp {
         return transposed;
     }
 
-    
+
+    /// @brief rotate a Matrix / flip a Matrix on the vertical axis
+    /// @return rotated Matrix
+    template<typename T>
+    Matrix<T> rotate180(const Matrix<T>& M) {
+        Matrix<T> rotated(M.rows(), M.cols());
+        for(size_t i = 0; i < M.rows(); i++) {
+            for(size_t j = 0; j < M.cols(); j++) {
+                rotated[i][j] = M[M.rows() - i - 1][M.cols() - j - 1];
+            }
+        }
+
+        return rotated;
+    }
+
+    /// @brief pad a Matrix with 0
+    /// @example
+    /// padSize = 1 
+    /*  M = 
+                | 1 3 5 7 |
+                | 2 5 7 9 |
+                | 1 1 4 1 |
+    */
+    /* @return padded = 
+                | 0 0 0 0 0 0 |
+                | 0 1 3 5 7 0 |
+                | 0 2 5 7 9 0 |
+                | 0 1 1 4 1 0 |
+                | 0 0 0 0 0 0 |
+    */
+    template<typename T>
+    Matrix<T> pad(const Matrix<T> M, size_t padSize) {
+        Matrix<T> padded(M.rows() + padSize * 2, M.cols() + padSize * 2, T{0});
+
+        for(size_t i = 0; i < M.rows(); i++) {
+            for(size_t j = 0; j < M.cols(); j++) {
+                padded[i + padSize][j + padSize] = M[i][j];
+            }
+        }
+        return padded;
+    }
+
+
 
     /*============================================
     ==============================================
@@ -189,50 +231,6 @@ namespace MatrixOp {
     std::vector<T> flatten(const Matrix<T>& A) {
         return A.data;
     }
-
-
-
-    /*
-    /// @brief 
-    /// @param image 
-    /// @param kernel 
-    /// @return 
-    template<typename T>
-    Matrix<T> convolve(const Matrix<T>& image, const Matrix<T>& kernel) {
-        if(image.rows() < kernel.rows() || image.cols() < kernel.cols()) {
-            throw std::runtime_error("Covolve: Image should be: Image >= (3 x 3)");
-        }
-
-        Matrix<T> convolved((image.rows() - kernel.rows()) + 1, (image.cols() - kernel.cols()) + 1);
-
-        for(size_t i = 0; i < convolved.rows(); i++) {
-            for(size_t j = 0; j < convolved.cols(); j++) {
-                // create patch
-                T patchSum = 0;
-                for(size_t x = 0; x < kernel.rows(); x++) {
-                    for(size_t y = 0; y < kernel.cols(); y++) {
-                        patchSum += image[i+x][j+y] * kernel[x][y];
-                    }
-                }
-
-                convolved[i][j] = patchSum;
-            }
-        }
-
-        return convolved;
-    }
-    
-    /// @brief Converts a Matrix into a "flat" std::vector or a 1-D array
-    /// @brief ... using std::std::vector's assignment operator. 
-    /// @param A - Matrix (n x m)
-    /// @return V - std::vector (n * m)
-    template<typename T>
-    std::vector<T> flatten(const Matrix<T>& A) {
-        std::vector<T> V;
-        V.data = A.data;
-        return V;
-    }
-    */
 
 
     float XavierGlorotRandom(const int inputs) {
