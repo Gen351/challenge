@@ -10,30 +10,58 @@ struct Matrix {
 
     std::vector<T> data;
 
-    Matrix() 
-        : row(0), col(0), data() {}
+    Matrix() = default;
+    Matrix(Matrix&& other) noexcept = default;
+    Matrix& operator=(Matrix&& other) noexcept = default;
 
     Matrix(size_t r, size_t c, T init = T{}) 
-        : row(r), col(c), data(r * c, init) {}
+        : row(r), col(c), data(r * c, init)
+    {}
+    Matrix(size_t r=1, std::vector<T> init)
+        : row(r), col(init.size()), data(init)
+    {}
 
-    
+
     T* operator[](size_t r) {
-        if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
+        #ifndef NDEBUG
+            if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
+        #endif
         return &data[r * col];
     }
     const T* operator[](size_t r) const {
-        if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
+        #ifndef NDEBUG
+            if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
+        #endif
         return &data[r * col];
     }
 
     T& operator()(size_t r, size_t c) {
-        if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
+        #ifndef NDEBUG
+            if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
+        #endif
         return data[r * col + c];
     }
     const T& operator()(size_t r, size_t c) const {
-        if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
+        #ifndef NDEBUG
+            if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
+        #endif
         return data[r * col + c];
     }
+
+    const auto begin() const {
+        return data.begin();
+    }
+    const auto end() const {
+        return data.end();
+    }
+
+    auto begin() {
+        return data.begin();
+    }
+    auto end() {
+        return data.end();
+    }
+
 
     size_t rows() const { return row; }
     size_t cols() const { return col; }

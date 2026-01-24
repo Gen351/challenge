@@ -2,8 +2,6 @@
 
 #include "abstract_layer.h"
 
-#include "tensor.h"
-
 enum class PoolType {
     MAX,
     AVERAGE
@@ -14,12 +12,12 @@ class PoolingLayer : public Layer {
 
     PoolType poolType;
     size_t poolSize;
+
 public:
 
     PoolingLayer(PoolType initPoolType=PoolType::MAX, size_t initPoolSize=2)
         : poolType(initPoolType)
-        , poolSize(initPoolSize < 2 ? 2 : initPoolSize)
-    {}
+        , poolSize(initPoolSize < 2 ? 2 : initPoolSize) {}
 
     Tensor forward(const Tensor& input) override {
         Tensor output(input.featureMaps.size());

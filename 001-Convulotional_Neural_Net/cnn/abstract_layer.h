@@ -6,22 +6,29 @@
 
 class Layer {
 
+protected:
+
+    bool training = false;
+    
 public:
+
     virtual ~Layer() = default;
 
     virtual Tensor forward(const Tensor& input) = 0;
     virtual Tensor backward(const Tensor& input) = 0;
 
-
-    float sigmoid(float x) {
-        return (1.0f / (1.0f + std::exp(-x)));
+    void train() {
+        training = true;
+    }
+    void predict() {
+        training = false;
     }
 
-    float sigmoidDerivative(float val) {
-        return (val * (1.0f - val));
-    }
+    size_t caclulateInputDimension(const Tensor& input) {
+        if(input.featureMaps.empty()) {
+            return 0;
+        }
 
-    float ReLU(float val) {
-        return val * (val > 0);
+        return input.featureMaps.size() * input.featureMaps[0].data.size();
     }
 };

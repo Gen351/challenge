@@ -12,4 +12,18 @@ struct Kernel {
             }
         }
     }
+
+    const auto begin() const {
+        return data.begin();
+    }
+    const auto end() const {
+        return data.end();
+    }
+
+    auto begin() {
+        return data.begin();
+    }
+    auto end() {
+        return data.end();
+    }
 };

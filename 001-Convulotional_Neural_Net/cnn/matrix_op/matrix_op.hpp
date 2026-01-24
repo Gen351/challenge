@@ -2,23 +2,25 @@
 #include<time.h>
 
 #include<vector>
+#include<math.h>
 
 #include "matrix.hpp"
-#include "vector.hpp"
 
 namespace MatrixOp {
 
     /* Functions using the structs */
     /// @brief x Matrix
-    /// @param v - Multidimentional Vector
+    /// @param v - Multidimentional std::vector
     /// @param m - Multidimentional Matrix
-    /// @return Vector<T> with Dimensions 1 x M.cols()
+    /// @return std::vector<T> with Dimensions 1 x M.cols()
     /// @warning v.size() must equal m.rows()
     template<typename T>
-    Vector<T> multiply(const Vector<T>& v, const Matrix<T>& M) {
-        if(v.size() != M.rows()) { throw std::runtime_error("v x M: Dimensions Mismatch!");}
-        
-        Vector<T> vxM(M.cols());
+    std::vector<T> multiply(const std::vector<T>& v, const Matrix<T>& M) {
+        #ifndef NDEBUG
+            if(v.size() != M.rows()) { throw std::runtime_error("v x M: Dimensions Mismatch!");}
+        #endif
+
+        std::vector<T> vxM(M.cols());
         for(size_t i = 0; i < M.cols(); i++) {
             T sum = 0;
             // M[j][i]: safe because (v.size() == M.rows())
@@ -43,7 +45,9 @@ namespace MatrixOp {
     */
     template<typename T>
     Matrix<T> multiply(const Matrix<T>& A, const Matrix<T>& B) {
-        if(A.cols() != B.rows()) { throw std::runtime_error("A x B: Dimensions Mismatch!");}
+        #ifndef NDEBUG
+            if(A.cols() != B.rows()) { throw std::runtime_error("A x B: Dimensions Mismatch!");}
+        #endif
 
         Matrix<T> AxB(A.rows(), B.cols(), T{});
         for(size_t i = 0; i < A.rows(); i++) {
@@ -59,12 +63,14 @@ namespace MatrixOp {
     }
 
     /// @brief 
-    /// @param a - vector a of dimention(d): 1 x n
-    /// @param b - vector b of dimention(d): 1 x n
-    /// @return T scalar dot products of vector a * b
+    /// @param a - std::vector a of dimention(d): 1 x n
+    /// @param b - std::vector b of dimention(d): 1 x n
+    /// @return T scalar dot products of std::vector a * b
     template<typename T>
-    T dot(const Vector<T>& a, const Vector<T>& b) {
-        if(a.size() != b.size()) { throw std::runtime_error("a dot b: Dimensions Mismatch!"); }
+    T dot(const std::vector<T>& a, const std::vector<T>& b) {
+        #ifndef NDEBUG
+            if(a.size() != b.size()) { throw std::runtime_error("a dot b: Dimensions Mismatch!"); }
+        #endif
 
         T sum = 0;
         for(size_t i = 0; i < a.size(); i++) sum += a[i] * b[i];
@@ -89,8 +95,10 @@ namespace MatrixOp {
     */
     template<typename T>
     T dot(const Matrix<T>& A, const Matrix<T>& B) {
-        if(A.cols() != B.cols() || A.rows() != B.rows()) { throw std::runtime_error("A dot B: Dimensions Mismatch!"); }
-        
+        #ifndef NDEBUG
+            if(A.cols() != B.cols() || A.rows() != B.rows()) { throw std::runtime_error("A dot B: Dimensions Mismatch!"); }
+        #endif
+
         T sum = 0;
         for(size_t i = 0; i < A.data.size(); i++)
             sum += A.data[i] * B.data[i];
@@ -99,11 +107,12 @@ namespace MatrixOp {
 
 
     template<typename T>
-    Matrix<T> add(const Matrix<T>& A, const Matrix<T> B) {
-        if(A.rows() != B.rows() || A.cols() != B.cols()) {
-            throw std::runtime_error("A + B: Dimensions Mismatch!");
-        }
-        Matrix<T> res(A.cols(), A.rows());
+    Matrix<T> add(const Matrix<T>& A, const Matrix<T>& B) {
+        #ifndef NDEBUG
+        if(A.rows() != B.rows() || A.cols() != B.cols()) { throw std::runtime_error("A + B: Dimensions Mismatch!"); }
+        #endif
+
+        Matrix<T> res(A.rows(), A.cols());
 
         for(size_t i = 0; i < A.data.size(); i++) {
             res.data[i] = A.data[i] + B.data[i]; 
@@ -111,6 +120,21 @@ namespace MatrixOp {
 
         return res;
     }
+
+    /// @brief (cum[i][j] = cum[i][j] + source[i][j])
+    /// @param cum = Matrix<T> cumulative, this is where you put your result 
+    /// @param source = addend
+    template<typename T>
+    void addInPlace(Matrix<T>& cum, const Matrix<T>& source) {
+        #ifndef NDEBUG
+            if(cum.rows() != source.rows() || cum.cols() != source.cols()) { throw std::runtime_error("cum + source: Dimensions Mismatch!"); }
+        #endif
+
+        for(size_t i = 0; i < cum.data.size(); i++) {
+            cum.data[i] +=  source.data[i]; 
+        }
+    }
+
 
     /// @example 
     /*
@@ -157,14 +181,13 @@ namespace MatrixOp {
     ==============================================
     ============================================*/
     
-    /// @brief Converts a Matrix into a "flat" Vector or a 1-D array
-    /// @brief ... using std::vector's assignment operator. 
+    /// @brief Converts a Matrix into a "flat" std::vector or a 1-D array
+    /// @brief ... using std::std::vector's assignment operator. 
     /// @param A - Matrix (n x m)
-    /// @return V - Vector (n * m)
-    Vector<float> flatten(const Matrix<float>& A) {
-        Vector<float> V;
-        V.data = A.data;
-        return V;
+    /// @return V - std::vector (n * m)
+    template<typename T>
+    std::vector<T> flatten(const Matrix<T>& A) {
+        return A.data;
     }
 
 
@@ -199,17 +222,22 @@ namespace MatrixOp {
         return convolved;
     }
     
-    /// @brief Converts a Matrix into a "flat" Vector or a 1-D array
-    /// @brief ... using std::vector's assignment operator. 
+    /// @brief Converts a Matrix into a "flat" std::vector or a 1-D array
+    /// @brief ... using std::std::vector's assignment operator. 
     /// @param A - Matrix (n x m)
-    /// @return V - Vector (n * m)
+    /// @return V - std::vector (n * m)
     template<typename T>
-    Vector<T> flatten(const Matrix<T>& A) {
-        Vector<T> V;
+    std::vector<T> flatten(const Matrix<T>& A) {
+        std::vector<T> V;
         V.data = A.data;
         return V;
     }
     */
+
+
+    float XavierGlorotRandom(const int inputs) {
+        return initRandFloat() * std::sqrt(1.0f / inputs);
+    }
 
     float initRandFloat() {    
         return ((float)rand()/(float)RAND_MAX)

@@ -3,18 +3,31 @@
 #include "abstract_layer.h"
 #include "./conv_layer/filter.h"
 
-#include "tensor.h"
-
 class ConvLayer : public Layer {
 
     std::vector<Filter> filters;
     std::vector<float> biases;
+    Tensor lastInput;
+    Tensor lastOutput;
 
 public:
+
     ConvLayer() = default;
     ConvLayer(size_t filterCount, size_t channelCount=1, size_t kernelDimensions=3)
         : filters(filterCount, Filter(channelCount, kernelDimensions))
-        , biases(filterCount, 0) {}
+        , biases(filterCount, 0)
+    {
+        const int inputs = channelCount * kernelDimensions * kernelDimensions;
+        
+        for(auto& filter : filters) {
+            for(auto& channel : filter.channels) {
+                for(float& data : channel) {
+                    data = MatrixOp::XavierGlorotRandom(inputs);
+                    // data = MatrixOp::initRandFloat();
+                }
+            }
+        }
+    }
 
     Tensor forward(const Tensor& input) override {
         if (input.featureMaps.empty()) return Tensor();
@@ -29,13 +42,13 @@ public:
 
             for(size_t c = 1; c < input.featureMaps.size(); c++) {
                 Matrix<float> channelResult = convolve(input.featureMaps[c], filters[f].channels[c]);
-                total = MatrixOp::add(total, channelResult);
+                MatrixOp::addInPlace(total, channelResult);
             }
 
             // Adding the bias
             float bias = biases[f];
             for(size_t i = 0; i < total.data.size(); i++) {
-                total.data[i] = ReLU(total.data[i] + bias);
+                total.data[i] = total.data[i] + bias;
             }
 
             output.addFeatureMap(total);
@@ -54,7 +67,6 @@ private:
         if(featureMap.rows() < kernel.data.rows() || featureMap.cols() < kernel.data.cols()) {
             throw std::runtime_error("Covolve: featureMap should be: featureMap >= (3 x 3)");
         }
-
         Matrix<float> convolved((featureMap.rows() - kernel.data.rows()) + 1, (featureMap.cols() - kernel.data.cols()) + 1);
 
         for(size_t i = 0; i < convolved.rows(); i++) {
@@ -63,7 +75,7 @@ private:
                 float patchSum = 0;
                 for(size_t x = 0; x < kernel.data.rows(); x++) {
                     for(size_t y = 0; y < kernel.data.cols(); y++) {
-                        patchSum += featureMap[i+x][j+y] * kernel.data[x][y];
+                        patchSum += featureMap(i+x, j+y) * kernel.data(x, y);
                     }
                 }
 
@@ -73,5 +85,4 @@ private:
 
         return convolved;
     }
-
 };
