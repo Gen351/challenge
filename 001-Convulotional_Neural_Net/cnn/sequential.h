@@ -103,6 +103,11 @@ public:
         }
     }
 
+
+    const std::vector<std::unique_ptr<Layer>>& getLayers() const {
+        return layers;
+    }
+
 private:
 
 };

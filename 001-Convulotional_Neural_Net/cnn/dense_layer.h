@@ -112,6 +112,7 @@ public:
         return gradientInput;
     }
 
+    // by Gemini 3.0 Pro
     void update(float learningRate) override {
         // Update Weights
         for(size_t i = 0; i < weights.data.size(); i++) {
@@ -123,5 +124,41 @@ public:
             bias[i] -= learningRate * gradientBias[i];
         }
     }
+    std::string getType() const override { return "DENSE"; }
+
+    void save(std::ofstream& file) const override {
+        // Save Config
+        file << weights.rows() << " " << weights.cols() << "\n";
+
+        // Save Weights
+        for(float val : weights.data) {
+            file << val << " ";
+        }
+
+        // Save Biases
+        for(float val : bias) {
+            file << val << " ";
+        }
+        file << "\n";
+    }
+
+    void load(std::ifstream& file) override {
+        // Weights
+        for(float& val : weights.data) {
+            file >> val;
+        }
+        // Biases
+        for(float& val : bias) {
+            file >> val;
+        }
+    }
+
+
+
+
+
+
+
+
 
 };

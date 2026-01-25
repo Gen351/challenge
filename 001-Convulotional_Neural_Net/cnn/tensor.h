@@ -6,8 +6,6 @@ struct Tensor {
 
     std::vector<Matrix<float>> featureMaps;
 
-public:
-
     Tensor() = default;
     Tensor(const Tensor& other) = default;
     Tensor(Tensor&& other) noexcept = default;

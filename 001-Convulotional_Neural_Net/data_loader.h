@@ -5,14 +5,20 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <utility> 
 #include <cmath>     // for std::floor
 #include <algorithm> // for std::max
+#include <cstdlib>   // for system() to create directories
 
 // Include your core matrix and model headers
 #include "./cnn/matrix_op/matrix.hpp"
 #include "./cnn/sequential.h"
 #include "./cnn/tensor.h"
+
+// Include Layer implementations for the Factory
+#include "./cnn/conv_layer.h"
+#include "./cnn/dense_layer.h"
+#include "./cnn/pooling_layer.h"
+#include "./cnn/activation_layer.h"
 
 namespace DataLoader {
 
@@ -37,16 +43,15 @@ namespace DataLoader {
         std::cout << "\n--- " << label << " ---\n";
         for (size_t r = 0; r < img.rows(); r++) {
             for (size_t c = 0; c < img.cols(); c++) {
-                // Clamp and convert to 0-255
                 float val = img(r, c);
                 if (val < 0.0f) val = 0.0f;
                 if (val > 1.0f) val = 1.0f;
                 int intensity = static_cast<int>(val * 255.0f);
                 
-                // ANSI Grayscale Background + Two Spaces
+                // ANSI Grayscale Background
                 printf("\x1b[48;2;%d;%d;%dm  ", intensity, intensity, intensity);
             }
-            std::cout << "\x1b[0m\n"; // Reset at end of row
+            std::cout << "\x1b[0m\n"; 
         }
         std::cout << "\x1b[0m---------------------\n";
     }
@@ -63,8 +68,7 @@ namespace DataLoader {
         }
 
         std::string line;
-        // Skip header if present
-        std::getline(file, line); 
+        std::getline(file, line); // Skip header
 
         int count = 0;
         while (std::getline(file, line)) {
@@ -106,11 +110,11 @@ namespace DataLoader {
     // --- 2. TRAIN WRAPPER ---
     inline void train(Sequential& model, DataSet& trainData, int epochs, float learningRate) {
         std::cout << "--- Starting Training on " << trainData.inputs.size() << " samples ---" << std::endl;
+        // Assuming your Sequential::train takes vector<Matrix>
         model.train(epochs, trainData.inputs, trainData.targets, learningRate);
     }
 
     // --- 3. EVALUATE WRAPPER ---
-    // Added 'visualizeCount' to limit how many images get drawn (printing 100 images is a lot of scrolling!)
     inline void evaluate(Sequential& model, DataSet& testData, int visualizeCount = 5) {
         std::cout << "--- Starting Evaluation ---" << std::endl;
         
@@ -118,7 +122,6 @@ namespace DataLoader {
         int total = testData.inputs.size();
 
         for (int i = 0; i < total; i++) {
-            // Forward Pass
             Tensor input;
             input.addFeatureMap(testData.inputs[i]);
             Tensor output = model.predict(input);
@@ -145,17 +148,12 @@ namespace DataLoader {
                 }
             }
 
-            // Check correctness
             bool isCorrect = (predictedClass == actualClass);
             if (isCorrect) correct++;
 
-            // VISUALIZATION LOGIC
             if (i < visualizeCount) {
                 std::string status = isCorrect ? "[CORRECT]" : "[WRONG]";
-                std::string header = status + 
-                                     " Pred: " + getLabelName(predictedClass) + 
-                                     " | Act: " + getLabelName(actualClass);
-                
+                std::string header = status + " Pred: " + getLabelName(predictedClass) + " | Act: " + getLabelName(actualClass);
                 visualizeMatrix(testData.inputs[i], header);
             }
 
@@ -168,5 +166,96 @@ namespace DataLoader {
         std::cout << "\n\n=== FINAL RESULTS ===" << std::endl;
         std::cout << "Accuracy: " << ((float)correct / total) * 100.0f << "% (" 
                   << correct << "/" << total << ")" << std::endl;
+    }
+
+    namespace ModelIO {
+        
+        const std::string DIR = "./trained_cnns/";
+
+        inline void saveModel(const Sequential& model, const std::string& filename) {
+            // FIX: Use system call instead of std::filesystem for simplicity
+            // This tries to create the directory if it doesn't exist
+            #ifdef _WIN32
+                system(("if not exist \"" + DIR + "\" mkdir \"" + DIR + "\"").c_str());
+            #else
+                system(("mkdir -p " + DIR).c_str());
+            #endif
+
+            std::string fullPath = DIR + filename + ".cnn";
+            std::ofstream file(fullPath);
+            
+            if (!file.is_open()) {
+                std::cerr << "Error: Could not open " << fullPath << "\n";
+                return;
+            }
+
+            // FIX: Access layers by const reference to avoid unique_ptr copy error
+            const auto& layers = model.getLayers(); 
+            file << layers.size() << "\n";
+
+            // FIX: Iterate using const reference
+            for (const auto& layer : layers) {
+                file << layer->getType() << " "; 
+                layer->save(file);
+            }
+
+            std::cout << "Model saved to " << fullPath << std::endl;
+            file.close();
+        }
+
+        inline void loadModel(Sequential& model, const std::string& filename) {
+            std::string fullPath = DIR + filename + ".cnn";
+            std::ifstream file(fullPath);
+
+            if (!file.is_open()) {
+                throw std::runtime_error("Could not open model file: " + fullPath);
+            }
+
+            int numLayers;
+            file >> numLayers;
+
+            std::cout << "Loading " << numLayers << " layers from " << filename << "...\n";
+
+            for (int i = 0; i < numLayers; i++) {
+                std::string type;
+                file >> type;
+
+                Layer* newLayer = nullptr;
+
+                if (type == "CONV") {
+                    size_t f, d, k;
+                    file >> f >> d >> k;
+                    newLayer = new ConvLayer(f, d, k);
+                    newLayer->load(file);
+                }
+                else if (type == "DENSE") {
+                    size_t in, out;
+                    file >> in >> out;
+                    newLayer = new DenseLayer(in, out);
+                    newLayer->load(file);
+                }
+                else if (type == "POOL") {
+                    int t; size_t s;
+                    file >> t >> s;
+                    newLayer = new PoolingLayer((PoolType)t, s);
+                    newLayer->load(file);
+                }
+                else if (type == "ACT") {
+                    int t;
+                    file >> t;
+                    newLayer = new ActivationLayer((ActivationType)t);
+                    newLayer->load(file);
+                }
+                else {
+                    std::cerr << "Unknown layer type: " << type << std::endl;
+                }
+
+                if (newLayer) {
+                    model.add(newLayer);
+                }
+            }
+            std::cout << "Model loaded successfully.\n";
+            file.close();
+        }
     }
 }

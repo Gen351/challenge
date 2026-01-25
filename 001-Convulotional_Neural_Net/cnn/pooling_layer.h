@@ -71,6 +71,20 @@ public:
         // No weights to update in a pooling layer!
     }
 
+    // by Gemini 3.0 Pro
+    std::string getType() const override { return "POOL"; }
+
+    void save(std::ofstream& file) const override {
+        // Save Config: Type (as int) and Size
+        file << (int)poolType << " " << poolSize << "\n";
+    }
+
+    void load(std::ifstream& file) override {
+        // Pooling has no trained weights to load.
+        // The configuration was handled by the Factory to create this object.
+    }
+
+
 private:
 
     Matrix<float> maxPool(const Matrix<float>& channel) {

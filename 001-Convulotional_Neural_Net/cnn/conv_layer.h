@@ -142,6 +142,54 @@ public:
     }
 
 
+    // by Gemini 3.0 Pro :>
+    std::string getType() const override { return "CONV"; }
+
+    void save(std::ofstream& file) const override {
+        // 1. Save Config: FilterCount, ChannelDepth, KernelSize
+        size_t fCount = filters.size();
+        size_t cDepth = (fCount > 0) ? filters[0].channels.size() : 0;
+        size_t kSize  = (fCount > 0 && cDepth > 0) ? filters[0].channels[0].data.rows() : 0;
+
+        file << fCount << " " << cDepth << " " << kSize << "\n";
+
+        // 2. Save Filter Weights
+        for(const auto& filter : filters) {
+            for(const auto& channel : filter.channels) {
+                // Access the Matrix data vector directly
+                for(float val : channel.data.data) {
+                    file << val << " ";
+                }
+            }
+        }
+
+        // 3. Save Biases
+        for(float b : biases) {
+            file << b << " ";
+        }
+        file << "\n";
+    }
+
+    void load(std::ifstream& file) override {
+        // Note: The Factory in DataLoader has already read the Config (N,D,K)
+        // and created this object with the correct sizes. We just read the weights.
+
+        // 1. Load Filter Weights
+        for(auto& filter : filters) {
+            for(auto& channel : filter.channels) {
+                for(float& val : channel.data.data) {
+                    file >> val;
+                }
+            }
+        }
+
+        // 2. Load Biases
+        for(float& b : biases) {
+            file >> b;
+        }
+    }
+
+
 private:
 
     Matrix<float> convolve(const Matrix<float>& featureMap, const Matrix<float>& kernel) {

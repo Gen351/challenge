@@ -93,10 +93,23 @@ public:
         return gradientInput;
     }
 
-    virtual void update(float learningRate) override {
+    void update(float learningRate) override {
 
     }
     
+    // by Gemini 3.0 Pro
+    std::string getType() const override { return "ACT"; }
+
+    void save(std::ofstream& file) const override {
+        // Save Type as int
+        file << (int)type << "\n";
+    }
+
+    void load(std::ifstream& file) override {
+        // Activation has no weights.
+    }
+
+
 private:
 
     static void softmax(Tensor& input) {
