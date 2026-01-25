@@ -1,3 +1,5 @@
+#pragma once
+
 #include<stdexcept>
 #include<time.h>
 
@@ -232,11 +234,6 @@ namespace MatrixOp {
         return A.data;
     }
 
-
-    float XavierGlorotRandom(const int inputs) {
-        return initRandFloat() * std::sqrt(1.0f / inputs);
-    }
-
     float initRandFloat() {    
         return ((float)rand()/(float)RAND_MAX)
                 - ((float)rand()/(float)RAND_MAX);
@@ -244,4 +241,9 @@ namespace MatrixOp {
     int initRandInt(int max=RAND_MAX) {
         return rand()/max;
     }
+
+    float XavierGlorotRandom(const int inputs) {
+        return initRandFloat() * std::sqrt(1.0f / inputs);
+    }
+
 }

@@ -1,73 +1,73 @@
-#pragma once
+    #pragma once
 
-#include<stdexcept>
-#include<vector>
-    
-template<typename T>
-struct Matrix {
-    size_t row;
-    size_t col;
+    #include<stdexcept>
+    #include<vector>
+        
+    template<typename T>
+    struct Matrix {
+        size_t row;
+        size_t col;
 
-    std::vector<T> data;
+        std::vector<T> data;
 
-    Matrix() = default;
-    
-    Matrix(const Matrix& other) = default;
-    Matrix& operator=(const Matrix& other) = default;
+        Matrix() = default;
+        
+        Matrix(const Matrix& other) = default;
+        Matrix& operator=(const Matrix& other) = default;
 
-    Matrix(Matrix&& other) noexcept = default;
-    Matrix& operator=(Matrix&& other) noexcept = default;
-
-
-    Matrix(size_t r, size_t c, T init = T{}) 
-        : row(r), col(c), data(r * c, init)
-    {}
-    Matrix(size_t r=1, std::vector<T> init)
-        : row(r), col(init.size()), data(init)
-    {}
+        Matrix(Matrix&& other) noexcept = default;
+        Matrix& operator=(Matrix&& other) noexcept = default;
 
 
-    T* operator[](size_t r) {
-        #ifndef NDEBUG
-            if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
-        #endif
-        return &data[r * col];
-    }
-    const T* operator[](size_t r) const {
-        #ifndef NDEBUG
-            if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
-        #endif
-        return &data[r * col];
-    }
-
-    T& operator()(size_t r, size_t c) {
-        #ifndef NDEBUG
-            if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
-        #endif
-        return data[r * col + c];
-    }
-    const T& operator()(size_t r, size_t c) const {
-        #ifndef NDEBUG
-            if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
-        #endif
-        return data[r * col + c];
-    }
-
-    const auto begin() const {
-        return data.begin();
-    }
-    const auto end() const {
-        return data.end();
-    }
-
-    auto begin() {
-        return data.begin();
-    }
-    auto end() {
-        return data.end();
-    }
+        Matrix(size_t r, size_t c, T init = T{}) 
+            : row(r), col(c), data(r * c, init)
+        {}
+        Matrix(size_t r, std::vector<T> init)
+            : row(r), col(init.size()), data(init)
+        {}
 
 
-    size_t rows() const { return row; }
-    size_t cols() const { return col; }
-};
+        T* operator[](size_t r) {
+            #ifndef NDEBUG
+                if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
+            #endif
+            return &data[r * col];
+        }
+        const T* operator[](size_t r) const {
+            #ifndef NDEBUG
+                if(r >= row) { throw std::runtime_error("Matrix[]: Invalid Indexing!"); }
+            #endif
+            return &data[r * col];
+        }
+
+        T& operator()(size_t r, size_t c) {
+            #ifndef NDEBUG
+                if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
+            #endif
+            return data[r * col + c];
+        }
+        const T& operator()(size_t r, size_t c) const {
+            #ifndef NDEBUG
+                if(r >= row || c >= col) { throw std::runtime_error("Matrix[][]: Invalid Indexing"); }
+            #endif
+            return data[r * col + c];
+        }
+
+        const auto begin() const {
+            return data.begin();
+        }
+        const auto end() const {
+            return data.end();
+        }
+
+        auto begin() {
+            return data.begin();
+        }
+        auto end() {
+            return data.end();
+        }
+
+
+        size_t rows() const { return row; }
+        size_t cols() const { return col; }
+    };

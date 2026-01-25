@@ -16,7 +16,6 @@ public:
     Tensor(size_t featureMapCount)
         : featureMaps(featureMapCount)
     {}
-    Tensor(const Tensor& other) = default;
     Tensor(std::vector<Matrix<float>> initFeatureMaps)
         : featureMaps(initFeatureMaps)
     {}

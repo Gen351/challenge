@@ -1,107 +1,55 @@
 #include <iostream>
-#include <vector>
 #include <ctime>
-
-// Include your headers
-#include "./cnn/sequential.h"
-
-// Helper to generate a dummy 5x5 image with a vertical line
-Matrix<float> createVerticalLineImage() {
-    Matrix<float> m(5, 5, 0.0f);
-    for(int i=0; i<5; i++) m(i, 2) = 1.0f; // Line down the middle
-    return m;
-}
-
-// Helper to generate a dummy 5x5 image with a horizontal line
-Matrix<float> createHorizontalLineImage() {
-    Matrix<float> m(5, 5, 0.0f);
-    for(int j=0; j<5; j++) m(2, j) = 1.0f; // Line across the middle
-    return m;
-}
+#include "cnn/sequential.h"
+#include "data_loader.h" 
 
 int main() {
-    // 1. Initialize Random Seed (Crucial for weights!)
+    // Random seed is crucial for weight initialization
     std::srand(std::time(nullptr));
 
-    std::cout << "--- Building CNN ---" << std::endl;
+    std::cout << "--- Building CNN Model ---" << std::endl;
 
+    // 1. Build Model
     Sequential model;
-
-    // --- ARCHITECTURE ---
-    // Input Image: 5x5
     
-    // Layer 1: Conv
-    // Input: 1 channel (grayscale)
-    // Filters: 2 filters of size 3x3
-    // Output calculation: (5 - 3) + 1 = 3x3 Output Map
+    // Layer 1: Conv 
+    // Input: 28x28 (1 channel) -> Filters: 2 (3x3) -> Output: 26x26 (2 channels)
     model.add(new ConvLayer(2, 1, 3)); 
-    
-    // Layer 2: ReLU
     model.add(new ActivationLayer(ActivationType::ReLU));
-
-    // Layer 3: Max Pooling
-    // Input: 3x3
-    // Pool Size: 2x2
-    // Output calculation: 3 / 2 = 1 (Integer division) -> 1x1 Output
-    // Note: We have 2 filters, so we have two 1x1 maps.
+    
+    // Layer 2: Max Pool
+    // Input: 26x26 -> Pool: 2x2 -> Output: 13x13
     model.add(new PoolingLayer(PoolType::MAX, 2));
 
-    // Layer 4: Dense (Fully Connected)
-    // Input Size calculation: (Feature Maps) * (Rows) * (Cols) 
-    //                     = 2 * 1 * 1 = 2 inputs.
-    // Output Size: 2 classes (Vertical vs Horizontal)
-    model.add(new DenseLayer(2, 2));
-
-    // Layer 5: Softmax (Probability distribution)
+    // Layer 3: Dense
+    // Flatten Input: 2 channels * 13 * 13 = 338 inputs
+    // Output: 10 classes (Fashion MNIST categories)
+    model.add(new DenseLayer(338, 10)); 
     model.add(new ActivationLayer(ActivationType::SoftMax));
 
+    // 2. Load Data
+    // Ensure these paths are correct relative to your executable location
+    std::string trainPath = "./cnn-data/mnist/fashion-mnist_train.csv";
+    std::string testPath  = "./cnn-data/mnist/fashion-mnist_test.csv";
 
-    // --- DATA PREPARATION ---
-    std::cout << "--- Generating Data ---" << std::endl;
-    
-    std::vector<Matrix<float>> trainData;
-    std::vector<Matrix<float>> targets;
+    try {
+        // Load smaller subset for quick debugging (e.g., 2000 train, 100 test)
+        // Set limit to -1 to load the full dataset later.
+        auto trainData = DataLoader::loadFashionMNIST(trainPath, 2000); 
+        auto testData  = DataLoader::loadFashionMNIST(testPath, 20);
 
-    // Create 100 samples
-    for(int i = 0; i < 50; i++) {
-        // Sample 1: Vertical Line -> Target [1, 0]
-        trainData.push_back(createVerticalLineImage());
-        Matrix<float> t1(1, 2); t1(0,0) = 1; t1(0,1) = 0;
-        targets.push_back(t1);
+        // 3. Train
+        // Train for 5 epochs with Learning Rate 0.005
+        DataLoader::train(model, trainData, 5, 0.005f);
 
-        // Sample 2: Horizontal Line -> Target [0, 1]
-        trainData.push_back(createHorizontalLineImage());
-        Matrix<float> t2(1, 2); t2(0,0) = 0; t2(0,1) = 1;
-        targets.push_back(t2);
+        // 4. Test & Visualize
+        // The last argument '20' means "Visualize the first 20 images"
+        DataLoader::evaluate(model, testData, 20);
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
     }
-
-
-    // --- TRAINING ---
-    std::cout << "--- Starting Training ---" << std::endl;
-    // Train for 50 epochs with learning rate 0.01
-    model.train(50, trainData, targets, 0.01f);
-
-
-    // --- PREDICTION / TESTING ---
-    std::cout << "--- Testing ---" << std::endl;
-
-    // Test Case 1: Vertical Line
-    Tensor inputV; 
-    inputV.addFeatureMap(createVerticalLineImage());
-    Tensor outV = model.predict(inputV);
-    
-    std::cout << "Input: Vertical Line | Prediction: [ " 
-              << outV.featureMaps[0].data[0] << " (Vert), " 
-              << outV.featureMaps[0].data[1] << " (Horz) ]" << std::endl;
-
-    // Test Case 2: Horizontal Line
-    Tensor inputH; 
-    inputH.addFeatureMap(createHorizontalLineImage());
-    Tensor outH = model.predict(inputH);
-
-    std::cout << "Input: Horiz Line    | Prediction: [ " 
-              << outH.featureMaps[0].data[0] << " (Vert), " 
-              << outH.featureMaps[0].data[1] << " (Horz) ]" << std::endl;
 
     return 0;
 }
