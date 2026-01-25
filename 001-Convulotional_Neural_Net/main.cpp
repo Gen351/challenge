@@ -9,11 +9,11 @@
 // --- CONFIGURATION ---
 // Set this to the name of a model to load (e.g., "fmnist0") 
 // Leave it EMPTY "" to build and train a fresh model from scratch.
-const std::string loadModelName = ""; 
+const std::string loadModelName = "0"; 
 
 // The base name for your saved files. 
 // The code will automatically add numbers: fmnist0.cnn, fmnist1.cnn...
-const std::string saveNameBase = "fmnist"; 
+const std::string saveNameBase = "0_iter"; 
 
 // ---------------------
 
@@ -23,7 +23,6 @@ inline bool fileExists(const std::string& name) {
 }
 
 int main(int argc, char* argv[]) {
-    // Usage: ./main <epochs> <learning_rate>
     if(argc < 3) {
         std::cout << "Usage: " << argv[0] << " <epochs> <learning_rate>" << std::endl;
         return -1;
@@ -44,24 +43,24 @@ int main(int argc, char* argv[]) {
         // --- BUILD NEW MODEL ---
         std::cout << "Initializing new architecture..." << std::endl;
         
-        int filters = 8;
+        int filters = 16;
 
-        // Layer 1: Input 28x28x1 -> Output 24x24x8
+        // Layer 1: Input 28x28x1 -> Output 24x24x16
         model.add(new ConvLayer(filters, 1, 5)); 
         model.add(new ActivationLayer(ActivationType::ReLU));
 
-        // Layer 2: Input 24x24x8 -> Output 12x12x8
+        // Layer 2: Input 24x24x16 -> Output 12x12x8
         model.add(new PoolingLayer(PoolType::MAX, 2));
 
-        // Layer 3: Input 12x12x8 -> Output 10x10x4 
+        // Layer 3: Input 12x12x16 -> Output 10x10x8
         model.add(new ConvLayer(filters / 2, filters, 3)); 
         model.add(new ActivationLayer(ActivationType::ReLU));
 
-        // Layer 4: Input 10x10x4 -> Output 5x5x4
+        // Layer 4: Input 10x10x8 -> Output 5x5x8
         model.add(new PoolingLayer(PoolType::AVERAGE, 2));
 
-        // Layer 5: Dense (4 filters * 5 width * 5 height = 100 inputs)
-        model.add(new DenseLayer(100, 10));
+        // Layer 5: Dense (8 filters * 5 width * 5 height = 100 inputs)
+        model.add(new DenseLayer(200, 10));
         model.add(new ActivationLayer(ActivationType::SoftMax));
     }
 
@@ -99,7 +98,7 @@ int main(int argc, char* argv[]) {
             std::string fullPathToCheck = "./trained_cnns/" + candidateName + ".cnn";
             
             if (!fileExists(fullPathToCheck)) {
-                // Found a free slot!
+                // Found a free slot
                 finalName = candidateName;
                 break;
             }

@@ -32,9 +32,9 @@ public:
 
 
     void train(const size_t epochs,
-                const std::vector<Matrix<float>> trainData,
-                const std::vector<Matrix<float>> targetValues,
-                const float learningRate)
+                const std::vector<Matrix<float>>& trainData,
+                const std::vector<Matrix<float>>& targetValues,
+                float learningRate)
     {
         if(trainData.size() != targetValues.size()) {
             throw std::runtime_error("Train_data size != Target_values size");
@@ -43,6 +43,7 @@ public:
         // Set all layers to training mode
         for(auto& layer : layers) layer->train();
 
+        size_t half = epochs / 2;
         for(size_t epoch = 0; epoch < epochs; epoch++) {
             
             float totalLoss = 0;
@@ -97,9 +98,14 @@ public:
                     layer->update(learningRate);
                 }
             }
-            
+
             // Optional: Print average loss per epoch
-            std::cout << "Epoch: " << epoch + 1 << " | Loss: " << (totalLoss / trainData.size()) << std::endl;
+            printf("Epoch: %3d | Loss: %.9f | Lrate: %.8f\n", epoch + 1, (totalLoss / trainData.size()), learningRate);
+            size_t remaining = epochs - epoch;
+            if(remaining <= half && half > 0) {
+                learningRate /= 15;
+                half = remaining / 2;
+            }
         }
     }
 
