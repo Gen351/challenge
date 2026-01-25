@@ -2,3 +2,4 @@ mnist_train.csv
 mnist_test.csv
 fashion-mnist_train.csv
 fashion-mnist_test.csv
+cnn-data/*

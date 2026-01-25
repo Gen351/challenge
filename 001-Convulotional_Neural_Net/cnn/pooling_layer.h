@@ -2,40 +2,73 @@
 
 #include "abstract_layer.h"
 
+#include<limits>
+
 enum class PoolType {
     MAX,
     AVERAGE
 };
 
+typedef Matrix<float> (*poolFunc)(const Matrix<float>&);
+typedef Matrix<float> (*backwardPoolFunc)(const Matrix<float>&, const Matrix<float>&);
+
 
 class PoolingLayer : public Layer {
 
-    PoolType poolType;
     size_t poolSize;
+    PoolType poolType;
+
+    Tensor lastInput;
 
 public:
 
     PoolingLayer(PoolType initPoolType=PoolType::MAX, size_t initPoolSize=2)
         : poolType(initPoolType)
-        , poolSize(initPoolSize < 2 ? 2 : initPoolSize) {}
+        , poolSize(initPoolSize < 2 ? 2 : initPoolSize) {
+    }
 
     Tensor forward(const Tensor& input) override {
-        Tensor output(input.featureMaps.size());
-        if(poolType == PoolType::MAX) {
-            for(size_t i = 0;i < input.featureMaps.size(); i++) {
-                output.featureMaps[i] = maxPool(input.featureMaps[i]);
-            }
-        } else if(poolType == PoolType::AVERAGE) {
-            for(size_t i = 0;i < input.featureMaps.size(); i++) {
-                output.featureMaps[i] = avePool(input.featureMaps[i]);
-            }
+        if(training) {
+            lastInput = input;
         }
+        
+        Tensor output;
+
+        if (poolType == PoolType::MAX) {
+            for(size_t i = 0; i < input.featureMaps.size(); i++) {
+                output.addFeatureMap(maxPool(input.featureMaps[i]));
+            }
+        } else {
+            for(size_t i = 0; i < input.featureMaps.size(); i++) {
+                output.addFeatureMap(avePool(input.featureMaps[i]));
+            }
+        }   
 
         return output;
     }
 
-    Tensor backward(const Tensor& output) override {
-        return output;
+    Tensor backward(const Tensor& gradientOutput) override {
+        Tensor gradientInput;
+
+        if (poolType == PoolType::MAX) {
+            for(size_t i = 0; i < gradientOutput.featureMaps.size(); i++) {
+                gradientInput.addFeatureMap(
+                    backwardMaxPool(lastInput.featureMaps[i], gradientOutput.featureMaps[i])
+                );
+            }
+        } else {
+            for(size_t i = 0; i < gradientOutput.featureMaps.size(); i++) {
+                gradientInput.addFeatureMap(
+                    backwardAvePool(lastInput.featureMaps[i], gradientOutput.featureMaps[i])
+                );
+            }
+        }
+        
+        return gradientInput;
+    }
+
+    void update(float learningRate) override {
+        // No weights to update in a pooling layer!
     }
 
 private:
@@ -84,5 +117,61 @@ private:
 
         return output;
     }
+
+
+    Matrix<float> backwardMaxPool(const Matrix<float>& inputMap, const Matrix<float>& gradientMap) {
+        Matrix<float> result(inputMap.rows(), inputMap.cols(), 0.0f);
+
+        for(size_t i = 0; i < gradientMap.rows(); i++) {
+            for(size_t j = 0; j < gradientMap.cols(); j++) {
+                
+                float maxVal = std::numeric_limits<float>::lowest();
+                size_t maxRow = i * poolSize;
+                size_t maxCol = j * poolSize;
+
+                // We must find the exact index of the max value again
+                for(size_t x = 0; x < poolSize; x++) {
+                    for(size_t y = 0; y < poolSize; y++) {
+                        size_t currentRow = i * poolSize + x;
+                        size_t currentCol = j * poolSize + y;
+                        
+                        if(currentRow < inputMap.rows() && currentCol < inputMap.cols()) {
+                            if(inputMap[currentRow][currentCol] > maxVal) {
+                                maxVal = inputMap[currentRow][currentCol];
+                                maxRow = currentRow;
+                                maxCol = currentCol;
+                            }
+                        }
+                    }
+                }
+                result[maxRow][maxCol] += gradientMap[i][j];
+            }
+        }
+        return result;
+    }
+
+    Matrix<float> backwardAvePool(const Matrix<float>& inputMap, const Matrix<float>& gradientMap) {
+        Matrix<float> result(inputMap.rows(), inputMap.cols(), 0.0f);
+        float distributedError = 1.0f / (poolSize * poolSize);
+
+        for(size_t i = 0; i < gradientMap.rows(); i++) {
+            for(size_t j = 0; j < gradientMap.cols(); j++) {
+                
+                float grad = gradientMap[i][j] * distributedError;
+
+                for(size_t x = 0; x < poolSize; x++) {
+                    for(size_t y = 0; y < poolSize; y++) {
+                         size_t r = i * poolSize + x;
+                         size_t c = j * poolSize + y;
+                         if(r < result.rows() && c < result.cols()) {
+                             result[r][c] = grad;
+                         }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
 
 };

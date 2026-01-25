@@ -22,7 +22,7 @@ class ActivationLayer : public Layer {
     
 public:
 
-    ActivationLayer(ActivationType initType = ActivationType::Linear) 
+    ActivationLayer(ActivationType initType=ActivationType::Linear) 
         : type(initType) {
         if (initType == ActivationType::Linear) {
             activation = &linear;
@@ -69,15 +69,36 @@ public:
     
 
     Tensor backward(const Tensor& gradientOutput) override {
+        // If Linear or SoftMax (when combined with CrossEntropy), we usually pass gradient through.
+        // NOTE: True Softmax derivative is a Jacobian matrix, usually handled in the Loss function.
+        if(type == ActivationType::Linear || type == ActivationType::SoftMax) {
+            return gradientOutput;
+        }
+
+        Tensor gradientInput = gradientOutput; // Copy dimensions
+
+        // CHAIN RULE: Gradient = IncomingGradient * Derivative(LastInput)
+        for(size_t i = 0; i < gradientInput.featureMaps.size(); i++) {
+             // Loop through every pixel/neuron
+             for(size_t j = 0; j < gradientInput.featureMaps[i].data.size(); j++) {
+                 
+                 float inputVal = lastInput.featureMaps[i].data[j];
+                 float derivativeVal = derivative(inputVal);
+                 
+                 // Apply Chain Rule
+                 gradientInput.featureMaps[i].data[j] = gradientOutput.featureMaps[i].data[j] * derivativeVal;
+             }
+        }
         
-        
-        
-        
-        return gradientOutput;
+        return gradientInput;
     }
 
+    virtual void update(float learningRate) override {
 
+    }
+    
 private:
+
     static void softmax(Tensor& input) {
         float maxVal = -INFINITY;
         

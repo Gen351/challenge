@@ -40,7 +40,9 @@ public:
         if (input.featureMaps.size() != filters[0].channels.size()) {
             throw std::runtime_error("Input channels do not match filter depth!");
         }
-        lastInput = input;
+        if(training) {
+            lastInput = input;
+        }
 
         Tensor output;
 
