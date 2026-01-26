@@ -9,6 +9,8 @@
 #include <algorithm> // for std::max
 #include <cstdlib>   // for system() to create directories
 
+#include<random>
+
 // Include your core matrix and model headers
 #include "./cnn/matrix_op/matrix.hpp"
 #include "./cnn/sequential.h"
@@ -21,6 +23,20 @@
 #include "./cnn/activation_layer.h"
 
 namespace DataLoader {
+
+    std::vector<int> getRandomIndexes(int max, int count=1, int min=0) {
+        min = min < 0 ? 0 : min;
+        max = max < min ? min : max;
+        count = count < 1 ? 1 : count;
+
+        std::vector<int> random(count);
+        for(int i = 0; i < count; i++) {
+            random[i] = rand() % max + min;
+        }
+
+        std::sort(random.begin(), random.end());
+        return random;
+    }
 
     // A container for our loaded data
     struct DataSet {
@@ -108,18 +124,25 @@ namespace DataLoader {
     }
 
     // --- 2. TRAIN WRAPPER ---
-    inline void train(Sequential& model, DataSet& trainData, int epochs, float learningRate) {
+    inline void train(Sequential& model, DataSet& trainData, int epochs, float learningRate, bool smart=false) {
         std::cout << "--- Starting Training on " << trainData.inputs.size() << " samples ---" << std::endl;
         // Assuming your Sequential::train takes vector<Matrix>
-        model.train(epochs, trainData.inputs, trainData.targets, learningRate);
+        if(smart) {
+            model.trainSmart(epochs, trainData.inputs, trainData.targets, learningRate, true);
+        } else {
+            model.train(epochs, trainData.inputs, trainData.targets, learningRate);
+        }
     }
 
     // --- 3. EVALUATE WRAPPER ---
-    inline void evaluate(Sequential& model, DataSet& testData, int visualizeCount = 5) {
+    inline void evaluate(Sequential& model, DataSet& testData, int visualizeCount = 5, bool showIncorrect=false) {
         std::cout << "--- Starting Evaluation ---" << std::endl;
-        
+
         int correct = 0;
         int total = testData.inputs.size();
+
+        std::vector<int> random = getRandomIndexes(total, visualizeCount, 0);
+        int visualizeCounter = 0;
 
         for (int i = 0; i < total; i++) {
             Tensor input;
@@ -150,16 +173,34 @@ namespace DataLoader {
 
             bool isCorrect = (predictedClass == actualClass);
             if (isCorrect) correct++;
-
-            if (i < visualizeCount) {
-                std::string status = isCorrect ? "[CORRECT]" : "[WRONG]";
-                std::string header = status + " Pred: " + getLabelName(predictedClass) + " | Act: " + getLabelName(actualClass);
-                visualizeMatrix(testData.inputs[i], header);
+            if (showIncorrect) {
+                if (!isCorrect) {
+                    std::cout << "[" << i+1 << "/" << total << "]"
+                        << "|[" << (float)correct / (i+1) * 100.0f << "](%)|";
+                    std::string header = "[X]Pred:" + getLabelName(predictedClass) + "|Act:" + getLabelName(actualClass);
+                    if(visualizeCounter < visualizeCount) {
+                        visualizeMatrix(testData.inputs[i], header);
+                        visualizeCounter++;
+                    } else {
+                        std::cout << header;
+                    }
+                    std::cout << "\n";
+                }
+            } else {
+                // Normal mode: Show random samples (correct or incorrect)
+                if (!random.empty() && visualizeCounter < random.size() && i == random[visualizeCounter]) {
+                    std::string status = isCorrect ? "[CORRECT]" : "[WRONG]";
+                    std::string header = status + " Pred: " + getLabelName(predictedClass) + " | Act: " + getLabelName(actualClass);
+                    visualizeMatrix(testData.inputs[i], header);
+                    visualizeCounter++;
+                }
             }
 
-            if (i % 10 == 0 || i == total - 1) {
-                 std::cout << "\rTesting: " << i+1 << "/" << total 
-                           << " | Accuracy: " << (float)correct / (i+1) * 100.0f << "%" << std::flush;
+            if(!showIncorrect) {
+                if (i % 10 == 0 || i == total - 1) {
+                    std::cout << "\rTesting: " << i+1 << "/" << total 
+                            << " | Accuracy: " << (float)correct / (i+1) * 100.0f << "%" << std::flush;
+                }   
             }
         }
 

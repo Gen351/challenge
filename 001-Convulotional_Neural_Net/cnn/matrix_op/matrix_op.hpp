@@ -176,7 +176,19 @@ namespace MatrixOp {
     }
 
 
-    /// @brief rotate a Matrix / flip a Matrix on the vertical axis
+    /// @brief flip a matrix on the vertical axis
+    /// @return void, flips the referenced Matrix 
+    template<typename T>
+    void flipMatrixRef(Matrix<T>& M) {
+        for(size_t j = 0; j < M.cols() / 2; j++) {
+            for(size_t i = 0; i < M.rows(); i++) {
+                std::swap(M[i][j], M[i][M.cols() - j - 1]);
+            }
+        }
+    }
+
+
+    /// @brief rotate a Matrix
     /// @return rotated Matrix
     template<typename T>
     Matrix<T> rotate180(const Matrix<T>& M) {
