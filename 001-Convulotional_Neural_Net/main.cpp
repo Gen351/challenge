@@ -9,11 +9,11 @@
 // --- CONFIGURATION ---
 // Set this to the name of a model to load (e.g., "fmnist0") 
 // Leave it EMPTY "" to build and train a fresh model from scratch.
-const std::string loadModelName = ""; 
+const std::string loadModelName = "Smarter_Training_CAPCAPDADA0"; 
 
 // The base name for your saved files. 
 // The code will automatically add numbers: fmnist0.cnn, fmnist1.cnn...
-const std::string saveNameBase = "Smart_Training_CAPCAPDADA";
+const std::string saveNameBase = "Smarter_Training_CAPCAPDADA";
 
 // ---------------------
 

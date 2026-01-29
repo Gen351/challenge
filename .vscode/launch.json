@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": ".",
-      "program": "build/Debug/outDebug",
+      "cwd": "c:/Users/Gen/Desktop/SCHOOL/C++/000 Challenge/001-Convulotional_Neural_Net/cnn-data/test_images",
+      "program": "c:/Users/Gen/Desktop/SCHOOL/C++/000 Challenge/001-Convulotional_Neural_Net/cnn-data/test_images/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

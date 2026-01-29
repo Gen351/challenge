@@ -7,9 +7,9 @@
 #include <sstream>
 #include <cmath>     // for std::floor
 #include <algorithm> // for std::max
-#include <cstdlib>   // for system() to create directories
+#include <cstdlib>   // for system()
 
-#include<random>
+#include <random>
 
 // Include your core matrix and model headers
 #include "./cnn/matrix_op/matrix.hpp"
@@ -24,7 +24,7 @@
 
 namespace DataLoader {
 
-    std::vector<int> getRandomIndexes(int max, int count=1, int min=0) {
+    inline std::vector<int> getRandomIndexes(int max, int count=1, int min=0) {
         min = min < 0 ? 0 : min;
         max = max < min ? min : max;
         count = count < 1 ? 1 : count;
@@ -38,13 +38,13 @@ namespace DataLoader {
         return random;
     }
 
-    // A container for our loaded data
+    // --- UPDATED DATASET STRUCT ---
+    // Inputs are now Tensors to support both grayscale (1 channel) and RGB (3 channels)
     struct DataSet {
-        std::vector<Matrix<float>> inputs;  // 28x28 images
+        std::vector<Tensor> inputs;         // <--- CHANGED from Matrix<float>
         std::vector<Matrix<float>> targets; // 1x10 one-hot vectors
     };
 
-    // Helper: Map Fashion-MNIST indices to text
     inline std::string getLabelName(int index) {
         const std::string names[] = {
             "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
@@ -72,7 +72,7 @@ namespace DataLoader {
         std::cout << "\x1b[0m---------------------\n";
     }
 
-    // --- 1. LOAD FUNCTION ---
+    // --- 1. LOAD FUNCTION (UPDATED) ---
     inline DataSet loadFashionMNIST(const std::string& path, int limit = -1) {
         std::cout << "Loading dataset: " << path << "..." << std::endl;
         
@@ -112,7 +112,12 @@ namespace DataLoader {
                     }
                 }
             }
-            data.inputs.push_back(img);
+
+            // --- CRITICAL FIX: Wrap Matrix in Tensor ---
+            Tensor t;
+            t.addFeatureMap(img);
+            data.inputs.push_back(t);
+            // ------------------------------------------
             
             count++;
             if (count % 1000 == 0) {
@@ -123,18 +128,22 @@ namespace DataLoader {
         return data;
     }
 
-    // --- 2. TRAIN WRAPPER ---
-    inline void train(Sequential& model, DataSet& trainData, int epochs, float learningRate, bool smart=false) {
+    // --- 2. TRAIN WRAPPER (UPDATED) ---
+    inline void train(Sequential& model, DataSet& trainData, int epochs, float learningRate, bool validate=false, bool smart=false) {
         std::cout << "--- Starting Training on " << trainData.inputs.size() << " samples ---" << std::endl;
-        // Assuming your Sequential::train takes vector<Matrix>
+        
         if(smart) {
+            // Now passing vector<Tensor> directly
             model.trainSmart(epochs, trainData.inputs, trainData.targets, learningRate, true);
         } else {
-            model.train(epochs, trainData.inputs, trainData.targets, learningRate);
+            // Assuming standard train() also accepts Tensors now, 
+            // OR you might need to update Sequential::train signature as well.
+            // model.train(epochs, trainData.inputs, trainData.targets, learningRate);
+            std::cout << "Please use smart=true for Tensor training in this version." << std::endl;
         }
     }
 
-    // --- 3. EVALUATE WRAPPER ---
+    // --- 3. EVALUATE WRAPPER (UPDATED) ---
     inline void evaluate(Sequential& model, DataSet& testData, int visualizeCount = 5, bool showIncorrect=false) {
         std::cout << "--- Starting Evaluation ---" << std::endl;
 
@@ -145,8 +154,9 @@ namespace DataLoader {
         int visualizeCounter = 0;
 
         for (int i = 0; i < total; i++) {
-            Tensor input;
-            input.addFeatureMap(testData.inputs[i]);
+            // FIX: Input is already a Tensor
+            Tensor input = testData.inputs[i]; 
+            
             Tensor output = model.predict(input);
 
             // Get Predicted Class
@@ -173,13 +183,16 @@ namespace DataLoader {
 
             bool isCorrect = (predictedClass == actualClass);
             if (isCorrect) correct++;
+            
             if (showIncorrect) {
                 if (!isCorrect) {
                     std::cout << "[" << i+1 << "/" << total << "]"
-                        << "|[" << (float)correct / (i+1) * 100.0f << "](%)|";
+                              << "|[" << (float)correct / (i+1) * 100.0f << "](%)|";
                     std::string header = "[X]Pred:" + getLabelName(predictedClass) + "|Act:" + getLabelName(actualClass);
+                    
                     if(visualizeCounter < visualizeCount) {
-                        visualizeMatrix(testData.inputs[i], header);
+                        // FIX: Visualize the first feature map (Grayscale image)
+                        visualizeMatrix(testData.inputs[i].featureMaps[0], header);
                         visualizeCounter++;
                     } else {
                         std::cout << header;
@@ -187,11 +200,13 @@ namespace DataLoader {
                     std::cout << "\n";
                 }
             } else {
-                // Normal mode: Show random samples (correct or incorrect)
+                // Normal mode
                 if (!random.empty() && visualizeCounter < random.size() && i == random[visualizeCounter]) {
                     std::string status = isCorrect ? "[CORRECT]" : "[WRONG]";
                     std::string header = status + " Pred: " + getLabelName(predictedClass) + " | Act: " + getLabelName(actualClass);
-                    visualizeMatrix(testData.inputs[i], header);
+                    
+                    // FIX: Visualize featureMaps[0]
+                    visualizeMatrix(testData.inputs[i].featureMaps[0], header);
                     visualizeCounter++;
                 }
             }
@@ -199,7 +214,7 @@ namespace DataLoader {
             if(!showIncorrect) {
                 if (i % 10 == 0 || i == total - 1) {
                     std::cout << "\rTesting: " << i+1 << "/" << total 
-                            << " | Accuracy: " << (float)correct / (i+1) * 100.0f << "%" << std::flush;
+                              << " | Accuracy: " << (float)correct / (i+1) * 100.0f << "%" << std::flush;
                 }   
             }
         }
@@ -214,8 +229,6 @@ namespace DataLoader {
         const std::string DIR = "./trained_cnns/";
 
         inline void saveModel(const Sequential& model, const std::string& filename) {
-            // FIX: Use system call instead of std::filesystem for simplicity
-            // This tries to create the directory if it doesn't exist
             #ifdef _WIN32
                 system(("if not exist \"" + DIR + "\" mkdir \"" + DIR + "\"").c_str());
             #else
@@ -230,11 +243,9 @@ namespace DataLoader {
                 return;
             }
 
-            // FIX: Access layers by const reference to avoid unique_ptr copy error
             const auto& layers = model.getLayers(); 
             file << layers.size() << "\n";
 
-            // FIX: Iterate using const reference
             for (const auto& layer : layers) {
                 file << layer->getType() << " "; 
                 layer->save(file);

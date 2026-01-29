@@ -8,7 +8,7 @@
 
 // --- CONFIGURATION ---
 // Set this to the name of a model to load (e.g., "fmnist0") 
-const std::string loadModelName = "0_iter2";
+const std::string loadModelName = "Smarter_Training_CAPCAPDADA0";
 
 int main(int argc, char* argv[]) {
     if(argc < 3) {

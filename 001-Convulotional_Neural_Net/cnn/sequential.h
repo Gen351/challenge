@@ -120,8 +120,9 @@ public:
     }
 
 
+    // 1. Update arguments to accept Tensor inputs
     void trainSmart(const size_t epochs,
-                std::vector<Matrix<float>>& trainData,
+                std::vector<Tensor>& trainData,  // <--- CHANGED from vector<Matrix>
                 std::vector<Matrix<float>>& targetValues,
                 float learningRate, bool flip=true)
     {
@@ -129,48 +130,64 @@ public:
             throw std::runtime_error("Train_data size != Target_values size");
         }
 
-        // Set all layers to training mode
+        size_t shiftSize = (size_t)(trainData.size() * 0.7); 
+        // We make a copy of TENSORS now, not Matrices
+        std::vector<Tensor> trainDataCopy = trainData; 
+        std::vector<int> shiftedNFlipped;
+
         for(auto& layer : layers) layer->train();
 
-        float previousLoss = -1.0f;
+        float bestLoss = -1.0f;
+        int patienceCounter = 0;
+        const int MAX_PATIENCE = 3; 
 
         for(size_t epoch = 0; epoch < epochs; epoch++) {
-            // change the data quite a bit, rotate, transpose
+            
+            // --- AUGMENTATION FOR RGB TENSORS ---
             if(flip) {
-                std::vector<int> randomIndexes = getRandomIndexes((int)trainData.size(), (int)trainData.size() / 4, 0);            
+                std::vector<int> randomIndexes = getRandomIndexes((int)trainData.size(), (int)shiftSize, 0);            
+                shiftedNFlipped = randomIndexes;
 
-                for(size_t i = 0; i < randomIndexes.size(); i++) {
-                    MatrixOp::flipMatrixRef(trainData[randomIndexes[i]]);
+                for(int idx : randomIndexes) {
+                    int roll = rand() % 2;
+                    // Apply augmentation to ALL feature maps (R, G, B)
+                    Tensor& t = trainData[idx];
+                    
+                    if(roll == 0) { 
+                        // Flip all channels
+                        for(auto& map : t.featureMaps) {
+                            MatrixOp::flipMatrixRef(map);
+                        }
+                    } else {
+                        // Shift all channels identically
+                        int dir = rand() % 4;
+                        int amount = rand() % 2 + 1;
+                        for(auto& map : t.featureMaps) {
+                            map = MatrixOp::shift(map, dir, amount, 0.0f);
+                        }
+                    }
                 }
             }
 
             float totalLoss = 0;
 
-            // Iterate over every sample in the dataset
             for(size_t i = 0; i < trainData.size(); i++) {
-
-                // A. CONVERT DATA TO TENSOR
-                // The layers expect Tensors (which hold feature maps). 
-                // We assume trainData[i] is a single channel image.
-                Tensor input;
-                input.addFeatureMap(trainData[i]);
+                // 1. Input Setup 
+                // Since trainData is already a vector of Tensors, we just copy it
+                Tensor input = trainData[i]; 
 
                 Tensor target;
                 target.addFeatureMap(targetValues[i]);
 
-                // B. FORWARD PASS
+                // 2. Forward Pass
                 Tensor output = input;
-                for(auto& layer : layers) {
-                    output = layer->forward(output);
-                }
+                for(auto& layer : layers) output = layer->forward(output);
 
-                // C. CALCULATE LOSS GRADIENT (MSE)
-                // We need to calculate the error at the very end to start backpropagation.
-                // MSE Derivative: 2 * (Output - Target)
-                Tensor lossGradient = output; // Copy dimensions
-                
-                // Assuming output is 1xN (Dense Layer output)
+                // 3. Loss Calculation
+                Tensor lossGradient = output; 
                 float sampleLoss = 0;
+                
+                // Note: Output is likely 1D (Dense Layer), so featureMaps[0] is correct
                 std::vector<float>& outData = output.featureMaps[0].data;
                 std::vector<float>& targetData = target.featureMaps[0].data;
                 std::vector<float>& gradData = lossGradient.featureMaps[0].data;
@@ -178,40 +195,45 @@ public:
                 for(size_t j = 0; j < outData.size(); j++) {
                     float error = outData[j] - targetData[j];
                     sampleLoss += error * error;
-                    
-                    // The gradient we send into the last layer's backward()
                     gradData[j] = 2.0f * error; 
                 }
                 totalLoss += sampleLoss;
 
-                // D. BACKWARD PASS
-                // Loop in reverse order
+                // 4. Backward Pass
                 Tensor currentGradient = lossGradient;
                 for(auto it = layers.rbegin(); it != layers.rend(); ++it) {
                     currentGradient = (*it)->backward(currentGradient);
                 }
 
-                // E. UPDATE WEIGHTS
-                for(auto& layer : layers) {
-                    layer->update(learningRate);
-                }
+                // 5. Update Weights
+                for(auto& layer : layers) layer->update(learningRate);
             }
 
-            // Optional: Print average loss per epoch
             float avgLoss = totalLoss / trainData.size();
             printf("Epoch: %3d | Loss: %.9f | Lrate: %.8f\n", epoch + 1, avgLoss, learningRate);
 
-            // DECAY LOGIC:
-            if (previousLoss > 0) {
-                float improvement = previousLoss - avgLoss;
+            // --- PATIENCE LOGIC ---
+            if (bestLoss < 0 || avgLoss < bestLoss * 0.999f) {
+                bestLoss = avgLoss;
+                patienceCounter = 0; 
+            } else {
+                patienceCounter++;
+                printf("!!! No improvement. Patience: %d/%d\n", patienceCounter, MAX_PATIENCE);
                 
-                // If improvement is less than 0.1%, drop learning rate by 10x
-                if (improvement < (previousLoss * 0.001f)) {
-                    learningRate *= 0.1f;
+                if (patienceCounter >= MAX_PATIENCE) {
+                    learningRate *= 0.5f; 
                     printf("--- Learning rate dropped to %.8f ---\n", learningRate);
+                    patienceCounter = 0;
                 }
             }
-            previousLoss = avgLoss;
+
+            // --- RESTORE ORIGINAL DATA ---
+            if(flip) {
+                // Restore the specific tensors we modified
+                for(int idx : shiftedNFlipped) {
+                    trainData[idx] = trainDataCopy[idx]; 
+                }
+            }
         }
     }
 

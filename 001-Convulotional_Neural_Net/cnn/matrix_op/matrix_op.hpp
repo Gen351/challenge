@@ -188,6 +188,41 @@ namespace MatrixOp {
     }
 
 
+    /// @brief   
+    /// @param shiftDir {0=[<], 1=[^], 2=[>], 3=[v]}
+    /// @param pad padding for the shift 
+    /// @return shifted Matrix
+    template<typename T>
+    Matrix<T> shift(const Matrix<T>& M, int shiftDir, int shiftAmount, T pad) {
+        Matrix<T> shifted(M.rows(), M.cols(), pad);
+        
+        // Offset values
+        int di = 0, dj = 0;
+        shiftDir %= 4;
+        shiftAmount = shiftAmount > 2  || shiftAmount < 1 ? 1 : shiftAmount;
+
+        if (shiftDir == 0) dj = -shiftAmount;      // Left
+        else if (shiftDir == 1) di = -shiftAmount; // Up
+        else if (shiftDir == 2) dj = shiftAmount;  // Right
+        else if (shiftDir == 3) di = shiftAmount;  // Down
+
+        for (int i = 0; i < (int)M.rows(); i++) {
+            for (int j = 0; j < (int)M.cols(); j++) {
+                int src_i = i - di;
+                int src_j = j - dj;
+
+                // Only copy if the source pixel is within the original bounds
+                if (src_i >= 0 && src_i < (int)M.rows() && src_j >= 0 && src_j < (int)M.cols()) {
+                    shifted[i][j] = M(src_i, src_j); 
+                }
+                // Otherwise, it stays as the 'pad' value initialized in the constructor
+            }
+        }
+        return shifted;
+    }
+
+
+
     /// @brief rotate a Matrix
     /// @return rotated Matrix
     template<typename T>
