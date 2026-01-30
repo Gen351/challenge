@@ -1,9 +1,9 @@
 #include <iostream>
 #include <ctime>
-#include <fstream>   
-#include <string>    
-#include <algorithm> 
-#include <cmath>     
+#include <fstream>
+#include <string>
+#include <algorithm>
+#include <cmath>
 #include <iomanip> // Added for nicer printing
 
 // 1. Core Headers
@@ -12,16 +12,12 @@
 #include "data_loader.h" 
 #include "image_loader.h" 
 
-// --- CONFIGURATION ---
-const std::string loadModelName = "cat_dog_RGB1";
-const std::string csvPath = "cnn-data/catdog/CatDog.csv";
+#include "cnn/visualize.h"
 
-// Helper for class names
-std::string getFlowerName(int index) {
-    const char* names[] = {"Daisy", "Dandelion", "Rose", "Sunflower", "Tulip"};
-    if(index >= 0 && index < 5) return names[index];
-    return "Unknown";
-}
+// --- CONFIGURATION ---
+const std::string loadModelName = "cat_dog_RGB0";
+const std::string csvPath = "cnn-data/catdog/CatDog_test.csv";
+
 std::string getCatDogName(int index) {
     const char* names[] = {"Cat", "Dog"};
     if(index >= 0 && index < 2) return names[index];
@@ -30,36 +26,6 @@ std::string getCatDogName(int index) {
 
 
 
-// Helper: Visualizer (Your ANSI Color Function)
-void visualizeRGB(const Tensor& input) {
-    if(input.featureMaps.empty()) return;
-
-    int rows = input.featureMaps[0].rows();
-    int cols = input.featureMaps[0].cols();
-    int channels = input.featureMaps.size();
-
-    std::cout << "\n";
-    for(int r = 0; r < rows; r++) {
-        for(int c = 0; c < cols; c++) {
-            float red   = input.featureMaps[0](r, c);
-            float green = (channels > 1) ? input.featureMaps[1](r, c) : red;
-            float blue  = (channels > 2) ? input.featureMaps[2](r, c) : red;
-
-            auto toByte = [](float v) {
-                if(v < 0) v = 0; if(v > 1) v = 1;
-                return static_cast<int>(v * 255.0f);
-            };
-
-            int R = toByte(red);
-            int G = toByte(green);
-            int B = toByte(blue);
-
-            printf("\x1b[48;2;%d;%d;%dm  ", R, G, B);
-        }
-        printf("\x1b[0m\n");
-    }
-    printf("\x1b[0m\n"); 
-}
 
 // Helper: Batch Evaluation
 void evaluate(Sequential& model, const ImageLoader::Dataset& data, int visCount, bool showIncorrectOnly) {
@@ -91,7 +57,7 @@ void evaluate(Sequential& model, const ImageLoader::Dataset& data, int visCount,
             std::cout << "Pred: " << getCatDogName(predictedClass) << " (" << (int)confidence << "%)";
             std::cout << " | Actual: " << getCatDogName(actualClass) << std::endl;
             
-            visualizeRGB(data.inputs[i]);
+            Visualize::RGB(data.inputs[i]);
             displayed++;
         }
     }
@@ -125,7 +91,7 @@ int main(int argc, char* argv[]) {
 
     try {
         // --- MODE 1: Single Image Prediction ---
-        if(argc == 2) {
+        if(argc > 2 && argv[2] != "0" || argv[2] != "1" || argv[2] != "true" || argv[2] != "false") {
             std::string path = argv[1];
             std::cout << "Loading single image: " << path << "..." << std::endl;
             
@@ -133,7 +99,12 @@ int main(int argc, char* argv[]) {
             Tensor myImage = ImageLoader::loadImage(path, 64, 64, 3);
             
             // Predict
-            Tensor output = model.predict(myImage);
+            Tensor output;
+            if(argc == 3 && std::string(argv[2]) == "show_filters") {
+                output = model.predict(myImage, true);
+            } else {
+                output = model.predict(myImage);
+            }
             
             // Read Output Vector
             std::vector<float>& preds = output.featureMaps[0].data;
@@ -154,9 +125,8 @@ int main(int argc, char* argv[]) {
             std::cout << "]" << std::endl;
             std::cout << "---------------------------------------" << std::endl;
 
-            visualizeRGB(myImage);
-        } 
-        
+            Visualize::RGB(myImage);
+        }
         // --- MODE 2: Dataset Evaluation ---
         else {
             int visCount = std::stoi(argv[1]);

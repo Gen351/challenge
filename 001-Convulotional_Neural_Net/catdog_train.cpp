@@ -78,25 +78,25 @@ int main(int argc, char* argv[]) {
         // --- Layer 1 ---
         // 64x64 -> 62x62 -> Pool to 31x31
         model.add(new ConvLayer(16, CHANNELS, 3)); 
-        model.add(new ActivationLayer(ActivationType::ReLU));
+        model.add(new ActivationLayer(ActivationType::LeakyReLU));
         model.add(new PoolingLayer(PoolType::MAX, 2));
 
         // --- Layer 2 ---
         // 31x31 -> 29x29 -> Pool to 14x14
         model.add(new ConvLayer(32, 16, 3));
-        model.add(new ActivationLayer(ActivationType::ReLU));
+        model.add(new ActivationLayer(ActivationType::LeakyReLU));
         model.add(new PoolingLayer(PoolType::MAX, 2));
 
         // --- Layer 3 ---
         // 14x14 -> 12x12 -> Pool to 6x6
         model.add(new ConvLayer(64, 32, 3));
-        model.add(new ActivationLayer(ActivationType::ReLU));
+        model.add(new ActivationLayer(ActivationType::LeakyReLU));
         model.add(new PoolingLayer(PoolType::MAX, 2));
 
         // --- Flattening ---
         // 6 * 6 * 64 = 2304 inputs
         model.add(new DenseLayer(2304, 128)); 
-        model.add(new ActivationLayer(ActivationType::ReLU));
+        model.add(new ActivationLayer(ActivationType::LeakyReLU));
 
         // Output Layer
         model.add(new DenseLayer(128, CLASSES));

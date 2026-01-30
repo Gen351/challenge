@@ -11,6 +11,8 @@
 #include "pooling_layer.h"
 #include "activation_layer.h"
 
+#include "visualize.h"
+
 class Sequential {
     std::vector<std::unique_ptr<Layer>> layers;
 
@@ -19,19 +21,92 @@ public:
         layers.push_back(std::unique_ptr<Layer>(layer));
     }
 
+    Tensor predict(const Tensor& input, bool visualize = false) {
+        for (auto& layer : layers) layer->predict();
 
-    Tensor predict(const Tensor& input) {        
-        for(auto& layer : layers) layer->predict();
-        
         Tensor current = input;
-        for(auto& layer : layers) {
-            current = layer->forward(current);
+        int layerIndex = 0;
+
+        if (visualize) {
+            std::cout << "\n--- Input Image ---" << std::endl;
+            Visualize::RGB(current);
         }
 
+        for (auto& layer : layers) {
+            current = layer->forward(current);
+
+            if (visualize) {
+                std::string layerType = layer->getType();
+
+                if (layerType == "CONV" || layerType == "POOL") {
+                    std::cout << "\n--- Layer " << layerIndex << " [" << layerType << "] ---" << std::endl;
+
+                    size_t numMaps = current.featureMaps.size();
+                    size_t rows = current.featureMaps[0].rows();
+                    size_t cols = current.featureMaps[0].cols();
+
+                    std::vector<float> maxVals(numMaps, 0.001f);
+                    for (size_t m = 0; m < numMaps; m++) {
+                        for (float val : current.featureMaps[m].data) {
+                            if (val > maxVals[m]) maxVals[m] = val;
+                        }
+                    }
+
+                    std::string buffer;
+                    buffer.reserve(numMaps * rows * cols * 35); // Slightly larger buffer for heatmaps
+                    char pxBuf[64];
+
+                    size_t mapsPerRow = 16;
+                    if (cols >= 128) mapsPerRow = 1;
+                    else if (cols >= 64) mapsPerRow = 2;
+                    else if (cols >= 32) mapsPerRow = 4;
+                    else if (cols >= 16) mapsPerRow = 8;
+
+                    for (size_t chunkStart = 0; chunkStart < numMaps; chunkStart += mapsPerRow) {
+                        size_t chunkEnd = std::min(chunkStart + mapsPerRow, numMaps);
+
+                        for (size_t r = 0; r < rows; r++) {
+                            for (size_t m = chunkStart; m < chunkEnd; m++) {
+                                for (size_t c = 0; c < cols; c++) {
+                                    float val = current.featureMaps[m](r, c);
+                                    float norm = val / maxVals[m];
+                                    if (norm < 0) norm = 0;
+                                    if (norm > 1) norm = 1;
+
+                                    // --- HEATMAP COLOR CALCULATION (Jet Approximation) ---
+                                    int r_val, g_val, b_val;
+                                    
+                                    // Intensity 0.0 (Blue) -> 0.5 (Green) -> 1.0 (Red)
+                                    if (norm < 0.25f) {
+                                        r_val = 0; g_val = static_cast<int>(norm * 4 * 255); b_val = 255;
+                                    } else if (norm < 0.5f) {
+                                        r_val = 0; g_val = 255; b_val = static_cast<int>((0.5f - norm) * 4 * 255);
+                                    } else if (norm < 0.75f) {
+                                        r_val = static_cast<int>((norm - 0.5f) * 4 * 255); g_val = 255; b_val = 0;
+                                    } else {
+                                        r_val = 255; g_val = static_cast<int>((1.0f - norm) * 4 * 255); b_val = 0;
+                                    }
+
+                                    int len = snprintf(pxBuf, sizeof(pxBuf), "\x1b[48;2;%d;%d;%dm  ", r_val, g_val, b_val);
+                                    buffer.append(pxBuf, len);
+                                }
+                                buffer.append("\x1b[0m  ");
+                            }
+                            buffer.append("\x1b[0m\n");
+                        }
+                        buffer.append("\n\n");
+                    }
+
+                    fwrite(buffer.c_str(), 1, buffer.size(), stdout);
+                    std::cout << "=========================================\n";
+                }
+            }
+            layerIndex++;
+        }
         return current;
     }
 
-
+    
     void train(const size_t epochs,
                 const std::vector<Matrix<float>>& trainData,
                 const std::vector<Matrix<float>>& targetValues,
