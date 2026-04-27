@@ -11,3 +11,7 @@ trained_cnns/*
 
 *.csv
 *.exe
+*.jpg
+*.png
+
+001-Convolutional_Neural_Net/*
