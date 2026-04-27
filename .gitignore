@@ -5,7 +5,9 @@ fashion-mnist_train.csv
 fashion-mnist_test.csv
 
 cnn-data/*
-!cnn-data/*/
+!cnn-data/mnist/
+!cnn-data/catdog/
+!cnn-data/flowers/
 !cnn-data/flowers/flowers_dataset.csv
 
 trained_cnns/
