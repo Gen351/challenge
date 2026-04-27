@@ -6,8 +6,9 @@ fashion-mnist_test.csv
 
 cnn-data/*
 !cnn-data/*/
+!cnn-data/flowers/flowers_dataset.csv
 
-trained_cnns/*
+trained_cnns/
 
 *.csv
 *.exe
