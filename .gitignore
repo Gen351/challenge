@@ -1,23 +1,28 @@
+# 1. Ignore specific heavy data files
 mnist_train.csv
 mnist_test.csv
-
 fashion-mnist_train.csv
 fashion-mnist_test.csv
 
-cnn-data/*
-!cnn-data/*/
+# 2. Ignore everything inside cnn-data
+cnn-data/**/*
+
+# 3. BUT allow the folders to exist
+# AND specifically allow the flowers folder content
+!cnn-data/flowers/
 !cnn-data/flowers/*
 
-trained_cnns/
+# 4. Ignore all models inside subfolders
+trained_cnns/**/*.cnn
 
+# 5. Global rules for binaries and large assets
 *.csv
 *.exe
 *.jpg
 *.png
-
-*.txt
 *.zip
-
 *.cnn
+*.txt
 
-*.vscode
+# 6. Ignore VS Code settings
+.vscode/
