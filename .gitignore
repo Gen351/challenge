@@ -13,16 +13,13 @@ mnist_test.csv
 fashion-mnist_train.csv
 fashion-mnist_test.csv
 
-# Ignore everything inside cnn-data
-cnn-data/**/*
-
-# BUT allow the folders to exist
-# AND specifically allow the flowers folder content
-!cnn-data/flowers/
-!cnn-data/flowers/flowers_dataset.csv
+# FUCK!!
+001/Convolutional_Neural_Net/cnn-data/**
+!001/Convolutional_Neural_Net/cnn-data/flowers/
+!001/Convolutional_Neural_Net/cnn-data/flowers/**
 
 # Ignore all models inside subfolders
-trained_cnns/**/*.cnn
+001/Convolutional_Neural_Net/trained_cnns/**/*.cnn
 
 # Ignore VS Code settings
 .vscode/
