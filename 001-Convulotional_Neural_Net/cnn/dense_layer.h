@@ -19,6 +19,8 @@ public:
         , bias(outputSize)
         , gradientWeights(inputSize, outputSize)
         , gradientBias(outputSize)
+        , velocityWeights(inputSize, outputSize)
+        , velocityBias(outputSize, 0.0f)
     {
         const float scale = std::sqrt(1.0f / inputSize);
         for(float& weight : weights) weight = MatrixOp::initRandFloat() * scale;
@@ -28,7 +30,7 @@ public:
         if(training) {
             lastInput = input;
         }
-        
+        // flatten
         Matrix<float> flatMatrix(1, bias.size());
 
         for(size_t i = 0; i < bias.size(); i++) {
@@ -58,7 +60,7 @@ public:
         // A. GRADIENT BIAS
         // For batch size 1, the gradient of the bias is just the output error itself
         for(size_t i = 0; i < gradientBias.size(); i++) {
-            gradientBias[i] = gradientOutput.featureMaps[0].data[i];
+            gradientBias[i] += gradientOutput.featureMaps[0].data[i];
         }
 
         // B. GRADIENT WEIGHTS
@@ -77,7 +79,7 @@ public:
                     
                     // The weight connecting input[inputIndex] to output[i] contributed 
                     // 'inputVal' amount to the error 'errorVal'
-                    gradientWeights(inputIndex, i) = inputVal * errorVal;
+                    gradientWeights(inputIndex, i) += inputVal * errorVal;
                 }
                 inputIndex++;
             }
@@ -114,16 +116,30 @@ public:
 
     // by Gemini 3.0 Pro
     void update(float learningRate) override {
-        // Update Weights
-        for(size_t i = 0; i < weights.data.size(); i++) {
-            weights.data[i] -= learningRate * gradientWeights.data[i];
+        const float momentum = 0.9f;
+
+        // Update Weights with Momentum
+        for(size_t i = 0; i < weights.rows(); i++) {
+            for(size_t j = 0; j < weights.cols(); j++) {
+                // 1. Calculate new velocity
+                velocityWeights(i, j) = (momentum * velocityWeights(i, j)) + (learningRate * gradientWeights(i, j));
+                
+                // 2. Apply velocity to weights
+                weights(i, j) -= velocityWeights(i, j);
+                
+                // 3. Clear gradient for the next pass
+                gradientWeights(i, j) = 0.0f; 
+            }
         }
 
-        // Update Biases
+        // Update Biases with Momentum
         for(size_t i = 0; i < bias.size(); i++) {
-            bias[i] -= learningRate * gradientBias[i];
+            velocityBias[i] = (momentum * velocityBias[i]) + (learningRate * gradientBias[i]);
+            bias[i] -= velocityBias[i];
+            gradientBias[i] = 0.0f;
         }
     }
+
     std::string getType() const override { return "DENSE"; }
 
     void save(std::ofstream& file) const override {
@@ -152,4 +168,7 @@ public:
             file >> val;
         }
     }
+
+    Matrix<float> velocityWeights;
+    std::vector<float> velocityBias;
 };

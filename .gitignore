@@ -13,3 +13,8 @@ trained_cnns/*
 *.exe
 *.jpg
 *.png
+
+*.txt
+*.zip
+
+*.cnn

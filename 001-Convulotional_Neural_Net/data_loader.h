@@ -228,14 +228,17 @@ namespace DataLoader {
         
         const std::string DIR = "./trained_cnns/";
 
-        inline void saveModel(const Sequential& model, const std::string& filename) {
+        inline void saveModel(const Sequential& model, const std::string& filename, std::string dir="") {
             #ifdef _WIN32
-                system(("if not exist \"" + DIR + "\" mkdir \"" + DIR + "\"").c_str());
+                if(dir.empty()) {
+                    dir = DIR;
+                }
+                system(("if not exist \"" + dir + "\" mkdir \"" + dir + "\"").c_str());
             #else
-                system(("mkdir -p " + DIR).c_str());
+                system(("mkdir -p " + dir).c_str());
             #endif
 
-            std::string fullPath = DIR + filename + ".cnn";
+            std::string fullPath = dir + filename + ".cnn";
             std::ofstream file(fullPath);
             
             if (!file.is_open()) {
@@ -255,8 +258,11 @@ namespace DataLoader {
             file.close();
         }
 
-        inline void loadModel(Sequential& model, const std::string& filename) {
-            std::string fullPath = DIR + filename + ".cnn";
+        inline void loadModel(Sequential& model, const std::string& filename, std::string dir="") {
+            if(dir.empty()) {
+                dir = DIR;
+            }
+            std::string fullPath = dir + filename + ".cnn";
             std::ifstream file(fullPath);
 
             if (!file.is_open()) {

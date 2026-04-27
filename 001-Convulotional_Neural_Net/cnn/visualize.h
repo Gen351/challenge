@@ -1,11 +1,11 @@
 #pragma once
 
-#include "cnn/tensor.h"
+#include "tensor.h"
 
 
 namespace Visualize {
 
-    void RGB(const Tensor& input) {
+    void image(const Tensor& input) {
         if (input.featureMaps.empty()) return;
 
         // 1. Dimensions

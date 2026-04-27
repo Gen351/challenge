@@ -38,7 +38,7 @@ public:
     Tensor forward(const Tensor& input) override {
         if (input.featureMaps.empty()) return Tensor();
         if (input.featureMaps.size() != filters[0].channels.size()) {
-            throw std::runtime_error("Input channels do not match filter depth!");
+            throw std::runtime_error("Input channels do not match filter depth! [" + std::to_string(input.featureMaps.size()) + " | " + std::to_string(filters[0].channels.size()) + "]");
         }
         if(training) {
             lastInput = input;
@@ -73,13 +73,15 @@ public:
             for(size_t c = 0; c < gradientOutput.featureMaps[m].data.size(); c++) {
                 sum += gradientOutput.featureMaps[m].data[c];
             }
-            gradientBias[m] = sum;
+            gradientBias[m] += sum;
         }
 
         // 2. KERNEL GRADIENT
         for(size_t f = 0; f < filters.size(); f++) {
             for(size_t c = 0; c < filters[f].channels.size(); c++) {
-                gradientFilters[f].channels[c].data = convolve(lastInput.featureMaps[c], gradientOutput.featureMaps[f]);
+                // ACCUMULATING using your MatrixOp helper
+                Matrix<float> currentGrad = convolve(lastInput.featureMaps[c], gradientOutput.featureMaps[f]);
+                MatrixOp::addInPlace(gradientFilters[f].channels[c].data, currentGrad);
             }
         }
 

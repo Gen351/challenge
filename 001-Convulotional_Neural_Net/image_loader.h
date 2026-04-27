@@ -90,7 +90,7 @@ namespace ImageLoader {
     }
 
     // Main loading function (CSV)
-    inline Dataset loadFromCSV(const std::string& filename, int height, int width, int channels, int numClasses) {
+    inline Dataset loadFromCSV(const std::string& filename, int height, int width, int channels, int numClasses, int max_data=-1) {
         Dataset dataset;
         std::ifstream file(filename);
         
@@ -105,6 +105,8 @@ namespace ImageLoader {
         std::cout << "Loading dataset: " << filename << "..." << std::endl;
 
         while (std::getline(file, line)) {
+            if(max_data != -1 && count >= max_data) break;
+            
             std::stringstream ss(line);
             std::string valStr;
 

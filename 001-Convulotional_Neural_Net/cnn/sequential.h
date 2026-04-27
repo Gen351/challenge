@@ -29,7 +29,7 @@ public:
 
         if (visualize) {
             std::cout << "\n--- Input Image ---" << std::endl;
-            Visualize::RGB(current);
+            Visualize::image(current);
         }
 
         for (auto& layer : layers) {
@@ -195,61 +195,49 @@ public:
     }
 
 
-    // 1. Update arguments to accept Tensor inputs
     void trainSmart(const size_t epochs,
                 std::vector<Tensor>& trainData,  // <--- CHANGED from vector<Matrix>
                 std::vector<Matrix<float>>& targetValues,
-                float learningRate, bool flip=true)
+                float learningRate, bool flip=true, int batchSize=30)
     {
         if(trainData.size() != targetValues.size()) {
             throw std::runtime_error("Train_data size != Target_values size");
         }
 
-        size_t shiftSize = (size_t)(trainData.size() * 0.7); 
-        // We make a copy of TENSORS now, not Matrices
-        std::vector<Tensor> trainDataCopy = trainData; 
-        std::vector<int> shiftedNFlipped;
-
         for(auto& layer : layers) layer->train();
 
-        float bestLoss = -1.0f;
+        std::cout << "Training {\n\tEpoch [" << epochs 
+                        << "]\n\tLearn Rate [" << learningRate 
+                        << "]\n\tBatchSize [" << batchSize 
+                        << "]\n\tTrain Data Size [" << trainData.size() << "]\n}\n"; 
+
+        const int MAX_PATIENCE = 10; 
         int patienceCounter = 0;
-        const int MAX_PATIENCE = 3; 
+        float bestLoss = -1.0f;
 
         for(size_t epoch = 0; epoch < epochs; epoch++) {
             
-            // --- AUGMENTATION FOR RGB TENSORS ---
-            if(flip) {
-                std::vector<int> randomIndexes = getRandomIndexes((int)trainData.size(), (int)shiftSize, 0);            
-                shiftedNFlipped = randomIndexes;
-
-                for(int idx : randomIndexes) {
-                    int roll = rand() % 2;
-                    // Apply augmentation to ALL feature maps (R, G, B)
-                    Tensor& t = trainData[idx];
-                    
-                    if(roll == 0) { 
-                        // Flip all channels
-                        for(auto& map : t.featureMaps) {
-                            MatrixOp::flipMatrixRef(map);
-                        }
-                    } else {
-                        // Shift all channels identically
-                        int dir = rand() % 4;
-                        int amount = rand() % 2 + 1;
-                        for(auto& map : t.featureMaps) {
-                            map = MatrixOp::shift(map, dir, amount, 0.0f);
-                        }
-                    }
-                }
-            }
-
             float totalLoss = 0;
 
             for(size_t i = 0; i < trainData.size(); i++) {
                 // 1. Input Setup 
-                // Since trainData is already a vector of Tensors, we just copy it
-                Tensor input = trainData[i]; 
+                Tensor input = trainData[i];
+                
+                int toss = rand() % 101;
+                // --- AUGMENTATION FOR RGB TENSORS ---
+                // 70% chance to modify the input for more robust training....
+                if(flip && toss < 70) { // 70%
+                    toss = rand() % 2;
+                    if(toss == 0) {
+                        for(auto& map : input.featureMaps) MatrixOp::flipMatrixRef(map);
+                    } else {
+                        int dir = rand() % 4;
+                        int amount = rand() % 4 + 1;
+                        for(auto& map : input.featureMaps) {
+                            map = MatrixOp::shift(map, dir, amount, 0.0f);
+                        }
+                    }
+                }
 
                 Tensor target;
                 target.addFeatureMap(targetValues[i]);
@@ -281,7 +269,11 @@ public:
                 }
 
                 // 5. Update Weights
-                for(auto& layer : layers) layer->update(learningRate);
+                if((i + 1) % batchSize == 0 || i == trainData.size() - 1) {
+                    int currentBatchSize = ((i + 1) % batchSize == 0) ? batchSize : (trainData.size() % batchSize);
+                    
+                    for(auto& layer : layers) layer->update(learningRate / currentBatchSize);
+                }
             }
 
             float avgLoss = totalLoss / trainData.size();
@@ -301,12 +293,114 @@ public:
                     patienceCounter = 0;
                 }
             }
+        }
+    }
 
-            // --- RESTORE ORIGINAL DATA ---
-            if(flip) {
-                // Restore the specific tensors we modified
-                for(int idx : shiftedNFlipped) {
-                    trainData[idx] = trainDataCopy[idx]; 
+    void trainSmartCrossEntropy(const size_t epochs,
+                std::vector<Tensor>& trainData,  // <--- CHANGED from vector<Matrix>
+                std::vector<Matrix<float>>& targetValues,
+                float learningRate, bool flip=true, int batchSize=30)
+    {
+        if(trainData.size() != targetValues.size()) {
+            throw std::runtime_error("Train_data size != Target_values size");
+        }
+
+        for(auto& layer : layers) layer->train();
+
+        std::cout << "Training {\n\tEpoch [" << epochs 
+                        << "]\n\tLearn Rate [" << learningRate 
+                        << "]\n\tBatchSize [" << batchSize 
+                        << "]\n\tTrain Data Size [" << trainData.size() << "]\n}\n"; 
+
+        const int MAX_PATIENCE = 30; 
+        int patienceCounter = 0;
+        float bestLoss = -1.0f;
+
+        for(size_t epoch = 0; epoch < epochs; epoch++) {
+            
+            float totalLoss = 0;
+
+            for(size_t i = 0; i < trainData.size(); i++) {
+                // 1. Input Setup 
+                Tensor input = trainData[i];
+                
+                int toss = rand() % 101;
+                // --- AUGMENTATION FOR RGB TENSORS ---
+                // 70% chance to modify the input for more robust training....
+                if(flip && toss < 70) { // 70%
+                    toss = rand() % 2;
+                    if(toss == 0) {
+                        for(auto& map : input.featureMaps) MatrixOp::flipMatrixRef(map);
+                    } else {
+                        int dir = rand() % 4;
+                        int amount = rand() % 4 + 1;
+                        for(auto& map : input.featureMaps) {
+                            map = MatrixOp::shift(map, dir, amount, 0.0f);
+                        }
+                    }
+                }
+
+                Tensor target;
+                target.addFeatureMap(targetValues[i]);
+
+                // 2. Forward Pass
+                Tensor output = input;
+                for(auto& layer : layers) output = layer->forward(output);
+
+                // 3. Loss Calculation (Categorical Cross-Entropy)
+                Tensor lossGradient = output; 
+                float sampleLoss = 0;
+                
+                std::vector<float>& outData = output.featureMaps[0].data;
+                std::vector<float>& targetData = target.featureMaps[0].data;
+                std::vector<float>& gradData = lossGradient.featureMaps[0].data;
+
+                // Epsilon prevents log(0) and division by zero which causes "NaN" (Not a Number) crashes
+                const float epsilon = 1e-7f; 
+
+                for(size_t j = 0; j < outData.size(); j++) {
+                    // Clip the output so it never hits absolute 0.0 or absolute 1.0
+                    float val = std::max(epsilon, std::min(1.0f - epsilon, outData[j]));
+                    
+                    // Cross-Entropy Loss Calculation: -y * log(a)
+                    if (targetData[j] > 0.0f) {
+                        sampleLoss += -targetData[j] * std::log(val);
+                    }
+                    
+                    // The Derivative of Cross-Entropy w.r.t the SoftMax output
+                    gradData[j] = val - targetData[j]; 
+                }
+                totalLoss += sampleLoss;
+
+                // 4. Backward Pass
+                Tensor currentGradient = lossGradient;
+                for(auto it = layers.rbegin(); it != layers.rend(); ++it) {
+                    currentGradient = (*it)->backward(currentGradient);
+                }
+
+                // 5. Update Weights
+                if((i + 1) % batchSize == 0 || i == trainData.size() - 1) {
+                    int currentBatchSize = ((i + 1) % batchSize == 0) ? batchSize : (trainData.size() % batchSize);
+                    
+                    for(auto& layer : layers) layer->update(learningRate / currentBatchSize);
+                }
+            }
+
+            float avgLoss = totalLoss / trainData.size();
+            printf("Epoch: %3d | Loss: %.9f | Lrate: %.8f\n", epoch + 1, avgLoss, learningRate);
+
+            // --- PATIENCE LOGIC ---
+            if (bestLoss < 0 || avgLoss < bestLoss) {
+                bestLoss = avgLoss;
+                patienceCounter = 0; 
+            } else {
+                patienceCounter++;
+                printf("!!! No improvement. Patience: %d/%d\n", patienceCounter, MAX_PATIENCE);
+                
+                if (patienceCounter >= MAX_PATIENCE) {
+                    learningRate *= 0.5f; 
+                    printf("--- Learning rate dropped to %.8f ---\n", learningRate);
+                    patienceCounter = 0;
                 }
             }
         }
@@ -318,20 +412,4 @@ public:
     }
 
 private:
-
-    std::vector<int> getRandomIndexes(int max, int count=1, int min=0) {
-        min = min < 0 ? 0 : min;
-        max = max < min ? min : max;
-        count = count < 1 ? 1 : count;
-
-        std::vector<int> random(count);
-        for(int i = 0; i < count; i++) {
-            random[i] = rand() % max + min;
-        }
-
-        std::sort(random.begin(), random.end());
-        return random;
-    }
-
-
 };
