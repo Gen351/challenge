@@ -14,9 +14,11 @@ fashion-mnist_train.csv
 fashion-mnist_test.csv
 
 # FUCK!!
-001/Convolutional_Neural_Net/cnn-data/**
-!001/Convolutional_Neural_Net/cnn-data/flowers/
-!001/Convolutional_Neural_Net/cnn-data/flowers/**
+!001-Convolutional_Neural_Net/cnn-data/flowers/flowers_dataset.csv
+
+#ASDASFDASDASD
+001-Convolutional_Neural_Net/cnn-data/catdog/
+001-Convolutional_Neural_Net/cnn-data/mnist/
 
 # Ignore all models inside subfolders
 001/Convolutional_Neural_Net/trained_cnns/**/*.cnn
